@@ -10,10 +10,8 @@ class ReportCardController extends Controller
 {
 
 
-    public function show($student_id)
+    public function show(\Illuminate\Http\Request $request, $student_id)
     {
-
-
         // Get Student (by Student ID or User ID)
         $student = Student::with([
             'user',
@@ -35,22 +33,36 @@ class ReportCardController extends Controller
             ], 404);
         }
 
+        $academicYear = $request->query('academic_year');
+
         // Get Scores
-        $scores = StudentScore::with([
+        $scoresQuery = StudentScore::with([
             'subject',
             'assessment.semester.academicYear'
         ])
-        ->where('student_id', $student->id)
-        ->get();
+        ->where('student_id', $student->id);
 
-        // Calculate Average
+        if ($academicYear) {
+            $scoresQuery->whereHas('assessment.semester.academicYear', function($q) use ($academicYear) {
+                $q->where('name', $academicYear);
+            });
+        }
+
+        $scores = $scoresQuery->get();
+
+        // Calculate Average & School Passing Logic
         $average = 0;
-        if($scores->count() > 0)
-        {
-            $average = round(
-                $scores->avg('percentage'),
-                2
-            );
+        $scoreOn50 = 0;
+        $finalScore50 = 0;
+        $isPassed = false;
+        $resultStatus = 'N/A';
+
+        if ($scores->count() > 0) {
+            $average = round($scores->avg('percentage'), 2);
+            $scoreOn50 = round($average / 2, 2); // Score out of 50
+            $finalScore50 = (int)round($scoreOn50); // 24.5 rounds UP to 25 (PASS), 24.4 stays 24 (FAIL)
+            $isPassed = $finalScore50 >= 25;
+            $resultStatus = $isPassed ? 'ជាប់ (PASS)' : 'ធ្លាក់ (FAIL)';
         }
 
         // Calculate Grade
@@ -144,17 +156,15 @@ class ReportCardController extends Controller
 
 
 
-            "average"=>$average,
-
-
-            "overall_grade"=>$grade,
-
-
-
-            "rank"=>$rankData['rank'] ?? null,
-
-
-            "total_students"=>$rankData['total_students'] ?? 0
+            "average" => $average,
+            "score_out_of_50" => $scoreOn50,
+            "final_score_50" => $finalScore50,
+            "is_passed" => $isPassed,
+            "result_status" => $resultStatus,
+            "pass_threshold" => 25.00,
+            "overall_grade" => $grade,
+            "rank" => $rankData['rank'] ?? null,
+            "total_students" => $rankData['total_students'] ?? 0
 
 
 

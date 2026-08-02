@@ -8,6 +8,6 @@ export const getStudentDashboard = async () => {
     return await api.get('/student/dashboard');
 };
 
-export const getStudentAttendance = async () => {
-    return await api.get('/student/attendance');
+export const getStudentAttendance = async (params = {}) => {
+    return await api.get('/student/attendance', { params });
 };

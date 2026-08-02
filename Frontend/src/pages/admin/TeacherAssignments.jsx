@@ -730,7 +730,7 @@ const TeacherAssignments = () => {
                                             }}
                                             style={{ accentColor: '#4f46e5', width: '16px', height: '16px', cursor: 'pointer' }}
                                         />
-                                        🏫 ថ្នាក់ {c.name}
+                                        🏫 ថ្នាក់ {c.name} {c.stream === 'science' ? '🧪 វិទ្យាសាស្ត្រ' : c.stream === 'social_science' ? '📜 វិទ្យាសាស្ត្រសង្គម' : ''}
                                     </label>
                                 );
                             })}

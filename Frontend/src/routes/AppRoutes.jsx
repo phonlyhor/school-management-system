@@ -34,6 +34,7 @@ import AdminAttendance from "../pages/admin/Attendance";
 import AdminMonitoringLogbook from "../pages/admin/MonitoringLogbook";
 import AdminSchedule from "../pages/admin/Schedule";
 import AdminReportCard from "../pages/admin/ReportCard";
+import StudentPromotion from "../pages/admin/StudentPromotion";
 import AdminSettings from "../pages/admin/Settings";
 import AdminProfile from "../pages/admin/Profile";
 
@@ -43,6 +44,7 @@ import TeacherMyClasses from "../pages/teacher/MyClasses";
 import TeacherAttendance from "../pages/teacher/Attendance";
 import TeacherScores from "../pages/teacher/Scores";
 import TeacherSchedule from "../pages/teacher/Schedule";
+import HomeroomSchedule from "../pages/teacher/HomeroomSchedule";
 import TeacherProfile from "../pages/teacher/Profile";
 
 // Student
@@ -60,13 +62,19 @@ import ParentReportCard from "../pages/parent/ReportCard";
 import ParentSchedule from "../pages/parent/Schedule";
 import ParentProfile from "../pages/parent/Profile";
 
+// Public Verification & Registration
+import StudentVerification from "../pages/public/StudentVerification";
+import StudentRegister from "../pages/public/StudentRegister";
+
 const AppRoutes = () => {
     return (
         <Routes>
             {/* Public Routes */}
-            <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
-            <Route path="/register" element={<AuthLayout><Register /></AuthLayout>} />
-            <Route path="/forgot-password" element={<AuthLayout><ForgotPassword /></AuthLayout>} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<StudentRegister />} />
+            <Route path="/register/student" element={<StudentRegister />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/student/verify/:code" element={<StudentVerification />} />
 
             {/* Admin Routes */}
             <Route path="/admin" element={
@@ -90,6 +98,7 @@ const AppRoutes = () => {
                 <Route path="monitoring-logbook" element={<AdminMonitoringLogbook />} />
                 <Route path="schedule" element={<AdminSchedule />} />
                 <Route path="report-cards" element={<AdminReportCard />} />
+                <Route path="promotion" element={<StudentPromotion />} />
                 <Route path="leave-requests" element={<LeaveRequests />} />
                 <Route path="announcements" element={<Announcements />} />
                 <Route path="homework" element={<HomeworkPage />} />
@@ -111,6 +120,7 @@ const AppRoutes = () => {
                 <Route path="attendance" element={<TeacherAttendance />} />
                 <Route path="scores" element={<TeacherScores />} />
                 <Route path="schedule" element={<TeacherSchedule />} />
+                <Route path="homeroom-schedule" element={<HomeroomSchedule />} />
                 <Route path="leave-requests" element={<LeaveRequests />} />
                 <Route path="announcements" element={<Announcements />} />
                 <Route path="homework" element={<HomeworkPage />} />

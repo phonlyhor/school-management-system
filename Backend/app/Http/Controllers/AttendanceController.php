@@ -54,7 +54,9 @@ class AttendanceController extends Controller
         $user = auth()->user();
         $subjectId = $request->subject_id;
 
-        if (empty($subjectId) || $subjectId == '0' || $subjectId == 'homeroom') {
+        $isHomeroomAttempt = (empty($subjectId) || $subjectId == '0' || $subjectId == 'homeroom');
+
+        if ($isHomeroomAttempt) {
             $hrSubject = \App\Models\Subject::firstOrCreate(
                 ['code' => 'HR-ATTENDANCE'],
                 ['name' => 'វត្តមានប្រចាំថ្ងៃ (Homeroom Daily Attendance)', 'description' => 'Homeroom Daily Attendance']
@@ -66,6 +68,12 @@ class AttendanceController extends Controller
             $isHomeroom = \App\Models\TeacherClassAssignment::where('teacher_id', $user->id)
                 ->where('class_id', $request->class_id)
                 ->exists();
+
+            if ($isHomeroomAttempt && !$isHomeroom) {
+                return response()->json([
+                    'message' => 'លោកគ្រូ/អ្នកគ្រូ មិនមែនជាគ្រូបន្ទុកថ្នាក់សម្រាប់ថ្នាក់នេះទេ មិនអាចស្រង់វត្តមានប្រចាំថ្ងៃ (Homeroom Attendance) បានឡើយ!'
+                ], 403);
+            }
 
             if (!$isHomeroom) {
                 $allowed = \App\Models\TeacherSubjectAssignment::where('teacher_id', $user->id)
@@ -138,7 +146,9 @@ class AttendanceController extends Controller
         $teacher = $request->user();
         $subjectId = $request->subject_id;
 
-        if (empty($subjectId) || $subjectId == '0' || $subjectId == 'homeroom') {
+        $isHomeroomAttempt = (empty($subjectId) || $subjectId == '0' || $subjectId == 'homeroom');
+
+        if ($isHomeroomAttempt) {
             $hrSubject = \App\Models\Subject::firstOrCreate(
                 ['code' => 'HR-ATTENDANCE'],
                 ['name' => 'វត្តមានប្រចាំថ្ងៃ (Homeroom Daily Attendance)', 'description' => 'Homeroom Daily Attendance']
@@ -150,6 +160,12 @@ class AttendanceController extends Controller
             $isHomeroom = \App\Models\TeacherClassAssignment::where('teacher_id', $teacher->id)
                 ->where('class_id', $request->class_id)
                 ->exists();
+
+            if ($isHomeroomAttempt && !$isHomeroom) {
+                return response()->json([
+                    'message' => 'លោកគ្រូ/អ្នកគ្រូ មិនមែនជាគ្រូបន្ទុកថ្នាក់សម្រាប់ថ្នាក់នេះទេ មិនអាចស្រង់វត្តមានប្រចាំថ្ងៃ (Homeroom Attendance) បានឡើយ!'
+                ], 403);
+            }
 
             if (!$isHomeroom) {
                 $allowed = \App\Models\TeacherSubjectAssignment::where('teacher_id', $teacher->id)
@@ -238,51 +254,63 @@ class AttendanceController extends Controller
 //history of attendance
 public function history(Request $request)
 {
-
     $teacher = $request->user();
-
+    $isAdmin = strtolower($teacher->role?->name ?? '') === 'admin';
 
     $query = Attendance::with([
         'student.user',
         'subject',
         'schoolClass'
-    ])
-    ->where(
-        'teacher_id',
-        $teacher->id
-    );
+    ]);
 
+    $hrSubject = \App\Models\Subject::where('code', 'HR-ATTENDANCE')->first();
+    $hrSubjectId = $hrSubject ? $hrSubject->id : null;
 
-    // Filter class
-    if($request->class_id){
+    if (!$isAdmin) {
+        // Get classes where this teacher is assigned specifically as HOMEROOM TEACHER (គ្រូបន្ទុកថ្នាក់)
+        $homeroomClassIds = \App\Models\TeacherClassAssignment::where('teacher_id', $teacher->id)->pluck('class_id')->toArray();
 
-        $query->where(
-            'class_id',
-            $request->class_id
-        );
+        // If the teacher is not a homeroom teacher for any class, deny viewing attendance history
+        if (empty($homeroomClassIds)) {
+            return response()->json([
+                'message' => 'លោកគ្រូ/អ្នកគ្រូមុខវិជ្ជាគ្មានសិទ្ធិមើលរបាយការណ៍ប្រវត្តិវត្តមានឡើយ! (សម្រាប់តែគ្រូបន្ទុកថ្នាក់/Admin)',
+                'attendance' => [],
+                'is_homeroom' => false
+            ]);
+        }
 
+        if ($request->class_id) {
+            $classIdInt = (int)$request->class_id;
+
+            // Check if teacher is the homeroom teacher for the requested class
+            if (!in_array($classIdInt, array_map('intval', $homeroomClassIds))) {
+                return response()->json([
+                    'message' => 'លោកគ្រូ/អ្នកគ្រូ មិនមែនជាគ្រូបន្ទុកថ្នាក់សម្រាប់ថ្នាក់នេះទេ មិនអាចមើលរបាយការណ៍បានឡើយ!',
+                    'attendance' => [],
+                    'is_homeroom' => false
+                ]);
+            }
+
+            $query->where('class_id', $request->class_id);
+        } else {
+            // No specific class selected: limit to their assigned homeroom classes only
+            $query->whereIn('class_id', $homeroomClassIds);
+        }
+    } else {
+        // Admin can view any class
+        if ($request->class_id) {
+            $query->where('class_id', $request->class_id);
+        }
     }
-
 
     // Filter subject
-    if($request->subject_id){
-
-        $query->where(
-            'subject_id',
-            $request->subject_id
-        );
-
+    if ($request->subject_id) {
+        $query->where('subject_id', $request->subject_id);
     }
 
-
     // Filter date
-    if($request->date){
-
-        $query->whereDate(
-            'date',
-            $request->date
-        );
-
+    if ($request->date) {
+        $query->whereDate('date', $request->date);
     }
 
 

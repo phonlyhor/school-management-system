@@ -1,7 +1,9 @@
 import api from './api';
 
-export const getAdminDashboard = async () => {
-    const response = await api.get('/admin/dashboard');
+export const getAdminDashboard = async (date) => {
+    const response = await api.get('/admin/dashboard', {
+        params: date ? { date } : {}
+    });
     return response.data;
 };
 

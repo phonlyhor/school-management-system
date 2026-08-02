@@ -181,10 +181,20 @@ class ParentDashboardController extends Controller
             $studentIds = $parentRecords->pluck('student_id')->filter()->toArray();
         }
 
-        $attendances = Attendance::with(['subject', 'schoolClass', 'student.user'])
-            ->whereIn('student_id', $studentIds)
-            ->orderBy('date', 'desc')
-            ->get();
+        $query = Attendance::with(['subject', 'schoolClass', 'student.user'])
+            ->whereIn('student_id', $studentIds);
+
+        if ($request->query('date')) {
+            $query->whereDate('date', $request->query('date'));
+        }
+        if ($request->query('month')) {
+            $query->whereMonth('date', $request->query('month'));
+        }
+        if ($request->query('year')) {
+            $query->whereYear('date', $request->query('year'));
+        }
+
+        $attendances = $query->orderBy('date', 'desc')->get();
 
         $total = $attendances->count();
         $present = $attendances->where('status', 'present')->count();

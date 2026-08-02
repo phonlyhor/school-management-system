@@ -5,6 +5,10 @@ import "./index.css";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { LanguageProvider } from "./context/LanguageContext.jsx";
 import { Toaster } from 'react-hot-toast';
+import { enableInspectProtection } from "./utils/security.js";
+
+// Enable Inspect Protection globally
+enableInspectProtection();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
     <React.StrictMode>

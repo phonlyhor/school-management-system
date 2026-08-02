@@ -10,6 +10,8 @@ import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
     const { lang, t } = useLanguage();
+    const todayFormatted = new Date().toISOString().split('T')[0];
+    const [selectedDate, setSelectedDate] = useState(todayFormatted);
     const [data, setData] = useState({
         users: { teachers: 0, students: 0, parents: 0 },
         classes: 0,
@@ -31,7 +33,7 @@ const AdminDashboard = () => {
         const fetchDashboard = async () => {
             setLoading(true);
             try {
-                const res = await getAdminDashboard();
+                const res = await getAdminDashboard(selectedDate);
                 setData(res);
             } catch (err) {
                 console.error("Failed to load admin dashboard data:", err);
@@ -41,7 +43,7 @@ const AdminDashboard = () => {
             }
         };
         fetchDashboard();
-    }, []);
+    }, [selectedDate]);
 
     const getImageUrl = (photo) => {
         if (!photo) return null;
@@ -168,9 +170,52 @@ const AdminDashboard = () => {
 
             {/* Attendance Overview Card */}
             <div style={{ marginTop: '1.5rem', background: '#ffffff', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05)' }}>
-                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.05rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    📊 {t("សង្ខេបវត្តមានថ្ងៃនេះ", "Today's Attendance Overview")}
-                </h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        📊 {t("សង្ខេបវត្តមាន", "Attendance Overview")} 
+                        <span style={{ fontSize: '0.78rem', fontWeight: '600', padding: '0.2rem 0.6rem', borderRadius: '12px', background: selectedDate === todayFormatted ? '#e0e7ff' : '#f1f5f9', color: selectedDate === todayFormatted ? '#3730a3' : '#475569' }}>
+                            {selectedDate === todayFormatted ? t("ថ្ងៃនេះ", "Today") : selectedDate}
+                        </span>
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <label htmlFor="attendance-date-picker" style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '500' }}>
+                            {t("ជ្រើសរើសថ្ងៃ៖", "Select Date:")}
+                        </label>
+                        <input 
+                            id="attendance-date-picker"
+                            type="date" 
+                            value={selectedDate} 
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            style={{
+                                padding: '0.35rem 0.65rem',
+                                borderRadius: '6px',
+                                border: '1px solid #cbd5e1',
+                                fontSize: '0.85rem',
+                                color: '#1e293b',
+                                outline: 'none',
+                                cursor: 'pointer'
+                            }}
+                        />
+                        {selectedDate !== todayFormatted && (
+                            <button
+                                type="button"
+                                onClick={() => setSelectedDate(todayFormatted)}
+                                style={{
+                                    padding: '0.35rem 0.65rem',
+                                    borderRadius: '6px',
+                                    border: '1px solid #cbd5e1',
+                                    background: '#f8fafc',
+                                    fontSize: '0.8rem',
+                                    color: '#475569',
+                                    cursor: 'pointer',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                {t("ថ្ងៃនេះ", "Today")}
+                            </button>
+                        )}
+                    </div>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                     <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                         <FiCheckCircle size={32} color="#16a34a" />

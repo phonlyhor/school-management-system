@@ -11,3 +11,11 @@ export const markNotificationAsRead = (id) => {
 export const markAllNotificationsAsRead = () => {
     return api.put('/notifications/read-all');
 };
+
+export const deleteNotification = (id) => {
+    return api.delete(`/notifications/${id}`);
+};
+
+export const clearAllNotifications = () => {
+    return api.delete('/notifications');
+};

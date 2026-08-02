@@ -76,20 +76,28 @@ const ParentDashboard = () => {
     ];
 
     return (
-        <div>
-            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h1 className="page-title">{t("ផ្ទាំងបញ្ជាមាតាបិតាសិស្ស 👨‍👩‍👧‍👦", "Parent Dashboard 👨‍👩‍👧‍👦")}</h1>
+        <div style={{ width: '100%' }}>
+            {/* Header Banner */}
+            <div className="student-dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                    <h1 style={{ fontSize: '1.6rem', fontWeight: '800', margin: 0 }}>
+                        {t("ផ្ទាំងបញ្ជាមាតាបិតាសិស្ស 👨‍👩‍👧‍👦", "Parent Dashboard 👨‍👩‍👧‍👦")}
+                    </h1>
+                    <p style={{ margin: '0.25rem 0 0 0', opacity: 0.88, fontSize: '0.9rem' }}>
+                        {t("តាមដានវត្តមាន  calificaciones និង សកម្មភាពសិក្សារបស់កូនៗ។", "Monitor your children's academic attendance, grades, and school performance.")}
+                    </p>
+                </div>
 
                 {/* Child Selector Dropdown */}
                 {children.length > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <label style={{ fontWeight: '600', color: '#475569' }}>{t('ជ្រើសរើសកូន:', 'Filter Child:')}</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <label style={{ fontWeight: '700', color: '#ffffff', fontSize: '0.88rem' }}>{t('ជ្រើសរើសកូន ៖', 'Filter Child:')}</label>
                         <select 
                             value={selectedStudentId} 
                             onChange={(e) => setSelectedStudentId(e.target.value)}
                             style={{
-                                padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid #cbd5e1',
-                                fontWeight: '600', color: '#4f46e5', backgroundColor: '#f8fafc'
+                                padding: '0.5rem 0.8rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.3)',
+                                fontWeight: '700', color: '#1e1b4b', backgroundColor: '#ffffff', cursor: 'pointer'
                             }}
                         >
                             <option value="all">👨‍👩‍👧‍👦 {t("កូនៗទាំងអស់", "All Children")}</option>
@@ -103,7 +111,8 @@ const ParentDashboard = () => {
                 )}
             </div>
 
-            <div className="dashboard-section" style={{ gridTemplateColumns: '1fr 3fr', marginBottom: 'var(--spacing-xl)' }}>
+            {/* Layout Grid */}
+            <div className="student-layout-grid">
                 <ProfileCard 
                     name={stats.parent?.name || t('មាតាបិតា', 'Parent')} 
                     role={t("មាតាបិតាសិស្ស", "Parent")}
@@ -111,7 +120,7 @@ const ParentDashboard = () => {
                     metaDetails={parentProfileMeta}
                 />
                 
-                <div className="dashboard-grid" style={{ marginBottom: 0 }}>
+                <div className="student-stat-cards">
                     <StatCard 
                         title={t("ចំនួនកូនកំពុងសិក្សា", "Children Enrolled")} 
                         value={String(children.length || stats.total_children || 1)} 
@@ -139,9 +148,11 @@ const ParentDashboard = () => {
                 </div>
             </div>
 
-            <div style={{ marginTop: 'var(--spacing-xl)' }}>
+            <div style={{ marginTop: '1.5rem' }}>
                 <Card title={`👨‍👩‍👧‍👦 ${t("បញ្ជីឈ្មោះកូនៗទាំងអស់", "My Children Overview")}`}>
-                    <Table columns={childrenColumns} data={children} />
+                    <div className="table-responsive">
+                        <Table columns={childrenColumns} data={children} />
+                    </div>
                 </Card>
             </div>
         </div>

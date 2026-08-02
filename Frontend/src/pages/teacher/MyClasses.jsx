@@ -90,7 +90,11 @@ const MyClasses = () => {
         }
     });
 
-    const uniqueClasses = Array.from(classMap.values());
+    const uniqueClasses = Array.from(classMap.values()).sort((a, b) => {
+        if (a.is_homeroom && !b.is_homeroom) return -1;
+        if (!a.is_homeroom && b.is_homeroom) return 1;
+        return 0;
+    });
 
     const [isHomeroom, setIsHomeroom] = useState(false);
     const [todayAttendances, setTodayAttendances] = useState([]);

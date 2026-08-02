@@ -30,6 +30,30 @@ const getItemSession = (item) => {
     return 'afternoon';
 };
 
+const isPeriodPassed = (dayKey, endTimeStr) => {
+    if (!endTimeStr) return false;
+    const daysMap = {
+        'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6, 'Sunday': 0
+    };
+    const now = new Date();
+    const currentDay = now.getDay();
+    const targetDay = daysMap[dayKey];
+
+    if (targetDay === undefined) return false;
+    if (currentDay > targetDay) return true;
+    if (currentDay < targetDay) return false;
+
+    // Today: compare time
+    const parts = endTimeStr.split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1] || '0', 10);
+    if (isNaN(h)) return false;
+    const endMinutes = h * 60 + m;
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    return nowMinutes >= endMinutes;
+};
+
 const WeeklyCalendar = ({ schedule = [], type = 'student' }) => {
     const { lang, t } = useLanguage();
     const [activeSession, setActiveSession] = useState('all'); // 'all', 'morning', 'afternoon'
@@ -198,6 +222,12 @@ const WeeklyCalendar = ({ schedule = [], type = 'student' }) => {
                                                 <span className={styles.detailIcon}>📍</span>
                                                 {t("បន្ទប់", "Room")}: {item.room || 'N/A'}
                                             </div>
+
+                                            {isPeriodPassed(dayKey, item.end_time) && (
+                                                <div style={{ marginTop: '0.5rem', background: '#dcfce7', color: '#15803d', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.73rem', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                    <span>✅</span> {t("បង្រៀនរួចរាល់", "Completed")}
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })

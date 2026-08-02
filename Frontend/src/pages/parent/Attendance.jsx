@@ -8,6 +8,7 @@ const Attendance = () => {
     const { lang, t } = useLanguage();
     const [children, setChildren] = useState([]);
     const [selectedStudentId, setSelectedStudentId] = useState('all');
+    const [selectedDate, setSelectedDate] = useState('');
     const [attendances, setAttendances] = useState([]);
     const [summary, setSummary] = useState({ total: 0, present: 0, absent: 0, late: 0, percentage: '0%' });
     const [loading, setLoading] = useState(true);
@@ -36,12 +37,12 @@ const Attendance = () => {
         initChildren();
     }, []);
 
-    // Fetch attendance when selected student changes
+    // Fetch attendance when selected student or date changes
     useEffect(() => {
         const fetchAttendance = async () => {
             setLoading(true);
             try {
-                const res = await getParentAttendance(selectedStudentId);
+                const res = await getParentAttendance(selectedStudentId, selectedDate);
                 setAttendances(res.data.attendances || []);
                 if (res.data.summary) {
                     setSummary(res.data.summary);
@@ -54,7 +55,7 @@ const Attendance = () => {
             }
         };
         fetchAttendance();
-    }, [selectedStudentId, lang]);
+    }, [selectedStudentId, selectedDate, lang]);
 
     const statusBadge = (status) => {
         const s = (status || '').toLowerCase();
@@ -105,30 +106,58 @@ const Attendance = () => {
 
     return (
         <div>
-            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
                 <h1 className="page-title">{t("វត្តមានកូនៗ 📅", "Children's Attendance 📅")}</h1>
 
-                {/* Child Selector Dropdown */}
-                {children.length > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <label style={{ fontWeight: '600', color: '#475569' }}>{t("ជ្រើសរើសកូន:", "Filter Child:")}</label>
-                        <select 
-                            value={selectedStudentId} 
-                            onChange={(e) => setSelectedStudentId(e.target.value)}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    {/* Date Picker Filter */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <label style={{ fontWeight: '600', color: '#475569', fontSize: '0.88rem' }}>{t("កាលបរិច្ឆេទ:", "Date:")}</label>
+                        <input 
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
                             style={{
-                                padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid #cbd5e1',
-                                fontWeight: '600', color: '#4f46e5', backgroundColor: '#f8fafc'
+                                padding: '0.45rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1',
+                                fontWeight: '600', color: '#1e293b', backgroundColor: '#f8fafc', fontSize: '0.88rem'
                             }}
-                        >
-                            <option value="all">👨‍👩‍👧‍👦 {t("កូនៗទាំងអស់", "All Children")}</option>
-                            {children.map(child => (
-                                <option key={child.id} value={child.id}>
-                                    👤 {child.user?.name} ({child.student_code})
-                                </option>
-                            ))}
-                        </select>
+                        />
+                        {selectedDate && (
+                            <button
+                                type="button"
+                                onClick={() => setSelectedDate('')}
+                                style={{
+                                    padding: '0.45rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1',
+                                    background: '#ffffff', color: '#475569', fontWeight: '600', fontSize: '0.82rem', cursor: 'pointer'
+                                }}
+                            >
+                                🔄 {t("ទាំងអស់", "All")}
+                            </button>
+                        )}
                     </div>
-                )}
+
+                    {/* Child Selector Dropdown */}
+                    {children.length > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <label style={{ fontWeight: '600', color: '#475569', fontSize: '0.88rem' }}>{t("កូនសិស្ស:", "Child:")}</label>
+                            <select 
+                                value={selectedStudentId} 
+                                onChange={(e) => setSelectedStudentId(e.target.value)}
+                                style={{
+                                    padding: '0.45rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1',
+                                    fontWeight: '600', color: '#4f46e5', backgroundColor: '#f8fafc', fontSize: '0.88rem'
+                                }}
+                            >
+                                <option value="all">👨‍👩‍👧‍👦 {t("កូនៗទាំងអស់", "All Children")}</option>
+                                {children.map(child => (
+                                    <option key={child.id} value={child.id}>
+                                        👤 {child.user?.name} ({child.student_code})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}

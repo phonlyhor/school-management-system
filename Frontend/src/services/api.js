@@ -25,7 +25,11 @@ api.interceptors.response.use(
     (error) => {
         if (error.response && error.response.status === 401) {
             clearAuth();
-            window.location.href = "/login";
+            const path = window.location.pathname;
+            const isPublicPage = path === '/login' || path === '/register' || path.startsWith('/register') || path.startsWith('/student/verify') || path === '/forgot-password';
+            if (!isPublicPage) {
+                window.location.href = "/login";
+            }
         }
         return Promise.reject(error);
     }

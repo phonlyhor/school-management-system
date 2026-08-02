@@ -9,8 +9,11 @@ import { FiCalendar, FiTarget, FiBookOpen, FiAward } from 'react-icons/fi';
 import { getStudentDashboard } from '../../services/dashboardService';
 import { useNavigate } from 'react-router-dom';
 
+import StudentIDCardModal from '../../components/common/StudentIDCardModal';
+
 const StudentDashboard = () => {
     const { lang, t } = useLanguage();
+    const [showIdCardModal, setShowIdCardModal] = useState(false);
     const [data, setData] = useState({
         student: {},
         class: {},
@@ -88,20 +91,38 @@ const StudentDashboard = () => {
 
     return (
         <div>
-            <div className="page-header" style={{ marginBottom: '1.5rem' }}>
+            <div className="page-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                     <h1 className="page-title">{t("សូមស្វាគមន៍មកវិញ", "Welcome back")}, {student.name || t('សិស្ស', 'Student')} 👋</h1>
                     <p style={{ color: '#64748b', margin: '0.25rem 0 0 0', fontSize: '0.95rem' }}>
                         {t("ព័ត៌មានសង្ខេបជាក់ស្តែងអំពីការសិក្សា កាលវិភាគ និង លទ្ធផលវាយតម្លៃពិន្ទុថ្មីៗ។", "Your real-time academic overview, schedule, and recent assessment results.")}
                     </p>
                 </div>
+                <Button 
+                    variant="primary" 
+                    onClick={() => setShowIdCardModal(true)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '700' }}
+                >
+                    🪪 {t("កាតសិស្ស & QR Code", "My ID Card & QR Code")}
+                </Button>
             </div>
+
+            <StudentIDCardModal 
+                isOpen={showIdCardModal}
+                onClose={() => setShowIdCardModal(false)}
+                student={{
+                    ...student,
+                    class_name: cls.name,
+                    grade_level: cls.grade_level
+                }}
+            />
 
             <div className="student-layout-grid">
                 <ProfileCard 
                     name={student.name || t('សិស្ស', 'Student')} 
                     role={student.class_position && student.class_position !== 'Member' ? `👑 ${student.class_position}` : t('សិស្ស', 'Student')}
                     id={`${t('អត្តលេខ:', 'ID:')} ${student.student_code || 'N/A'}`}
+                    photo={student.photo}
                     metaDetails={studentProfileMeta}
                 />
                 

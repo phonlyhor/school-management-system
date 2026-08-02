@@ -9,7 +9,11 @@ const Input = ({
     placeholder, 
     error,
     required = false,
-    className = ''
+    className = '',
+    readOnly = false,
+    disabled = false,
+    style,
+    ...props
 }) => {
     return (
         <div className={`${styles.wrapper} ${className}`}>
@@ -22,11 +26,15 @@ const Input = ({
                 type={type}
                 id={name}
                 name={name}
-                value={value}
-                onChange={onChange}
+                value={value ?? ''}
+                onChange={onChange || (() => {})}
                 placeholder={placeholder}
                 required={required}
+                readOnly={readOnly}
+                disabled={disabled}
+                style={style}
                 className={`${styles.input} ${error ? styles.error : ''}`}
+                {...props}
             />
             {error && <span className={styles.errorText}>{error}</span>}
         </div>

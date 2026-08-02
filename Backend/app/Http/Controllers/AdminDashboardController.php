@@ -29,18 +29,19 @@ class AdminDashboardController extends Controller
             $adminOfficesCount = \App\Models\Building::where('type', 'Admin Office')->count();
             $totalRoomsCount = \App\Models\Building::sum('total_rooms');
 
-            // Attendance Overview (Smart fallback to latest date or system total if today has 0)
-            $today = Carbon::today();
-            $attendanceRecords = Attendance::whereDate('date', $today)->get();
-
-            if ($attendanceRecords->count() === 0) {
-                $latestDate = Attendance::max('date');
-                if ($latestDate) {
-                    $attendanceRecords = Attendance::whereDate('date', $latestDate)->get();
-                } else {
-                    $attendanceRecords = Attendance::all();
+            // Attendance Overview (Filter by selected date if provided, default to today)
+            $selectedDateStr = $request->query('date');
+            if ($selectedDateStr) {
+                try {
+                    $selectedDate = Carbon::parse($selectedDateStr);
+                } catch (\Exception $e) {
+                    $selectedDate = Carbon::today();
                 }
+            } else {
+                $selectedDate = Carbon::today();
             }
+
+            $attendanceRecords = Attendance::whereDate('date', $selectedDate->format('Y-m-d'))->get();
 
             $present = $attendanceRecords->filter(fn($a) => strtolower($a->status) === 'present')->count();
             $absent = $attendanceRecords->filter(fn($a) => strtolower($a->status) === 'absent')->count();
@@ -133,6 +134,8 @@ class AdminDashboardController extends Controller
                 'admin_offices' => $adminOfficesCount,
                 'total_rooms' => $totalRoomsCount,
                 'attendance_today' => [
+                    'date' => $selectedDate->format('Y-m-d'),
+                    'is_today' => $selectedDate->isToday(),
                     'present' => $present,
                     'absent' => $absent,
                     'late' => $late,

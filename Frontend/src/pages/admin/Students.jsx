@@ -519,11 +519,18 @@ const Students = () => {
                             >
                                 <option value="">🏫 {t("ថ្នាក់រៀនទាំងអស់", "All Classes")}</option>
                                 <option value="unassigned">⚠️ {t("មិនទាន់មានថ្នាក់រៀន", "Unassigned Class")}</option>
-                                {classes.map(c => (
-                                    <option key={c.id} value={c.id}>
-                                        👑 {c.name} ({formatGrade(c.grade_level)})
-                                    </option>
-                                ))}
+                                {classes.map(c => {
+                                    const streamLabel = c.stream === 'science' 
+                                        ? '🧪 វិទ្យាសាស្ត្រ' 
+                                        : c.stream === 'social_science' 
+                                        ? '📜 វិទ្យាសាស្ត្រសង្គម' 
+                                        : '';
+                                    return (
+                                        <option key={c.id} value={c.id}>
+                                            👑 {c.name} ({formatGrade(c.grade_level)}) {streamLabel ? `• ${streamLabel}` : ''}
+                                        </option>
+                                    );
+                                })}
                             </select>
                         </div>
 
@@ -770,9 +777,18 @@ const Students = () => {
                                             style={{ width: '100%', height: '42px', padding: '0.6rem 0.8rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.9rem', color: '#0f172a' }}
                                         >
                                             <option value="">-- {t("ជ្រើសរើសថ្នាក់", "Select Class")} --</option>
-                                            {classes.map(c => (
-                                                <option key={c.id} value={c.id}>{c.name}</option>
-                                            ))}
+                                            {classes.map(c => {
+                                                const streamLabel = c.stream === 'science' 
+                                                    ? '🧪 វិទ្យាសាស្ត្រ (Science)' 
+                                                    : c.stream === 'social_science' 
+                                                    ? '📜 វិទ្យាសាស្ត្រសង្គម (Social Science)' 
+                                                    : '';
+                                                return (
+                                                    <option key={c.id} value={c.id}>
+                                                        {c.name} {c.grade_level ? `(Grade ${c.grade_level})` : ''} {streamLabel ? `• ${streamLabel}` : ''}
+                                                    </option>
+                                                );
+                                            })}
                                         </select>
                                     </div>
                                 </div>

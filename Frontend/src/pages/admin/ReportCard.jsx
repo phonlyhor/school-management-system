@@ -15,6 +15,7 @@ const ReportCard = () => {
     const [classes, setClasses] = useState([]);
     const [students, setStudents] = useState([]);
     const [selectedClassId, setSelectedClassId] = useState('');
+    const [selectedAcademicYear, setSelectedAcademicYear] = useState('');
     const [selectedStudentId, setSelectedStudentId] = useState('');
     const [search, setSearch] = useState('');
     const [reportData, setReportData] = useState(null);
@@ -46,7 +47,7 @@ const ReportCard = () => {
         if (!studentId) return;
         setLoadingReport(true);
         try {
-            const res = await getStudentReportCard(studentId);
+            const res = await getStudentReportCard(studentId, selectedAcademicYear);
             setReportData(res.data || res);
             setIsReportModalOpen(true);
         } catch (err) {
@@ -163,6 +164,20 @@ const ReportCard = () => {
                             />
                         </div>
 
+                        {/* Academic Year Filter */}
+                        <div style={{ minWidth: '180px' }}>
+                            <select 
+                                value={selectedAcademicYear} 
+                                onChange={(e) => setSelectedAcademicYear(e.target.value)}
+                                style={{ width: '100%', height: '42px', padding: '0.6rem 0.8rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.9rem', color: '#4f46e5', fontWeight: '700', backgroundColor: '#f8fafc' }}
+                            >
+                                <option value="">🗓️ {t("ឆ្នាំសិក្សាទាំងអស់", "All Years")}</option>
+                                <option value="2026-2027">2026-2027</option>
+                                <option value="2025-2026">2025-2026</option>
+                                <option value="2024-2025">2024-2025</option>
+                            </select>
+                        </div>
+
                         {/* Class Filter */}
                         <div style={{ minWidth: '200px' }}>
                             <select 
@@ -171,14 +186,23 @@ const ReportCard = () => {
                                 style={{ width: '100%', height: '42px', padding: '0.6rem 0.8rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.9rem', color: '#0f172a', fontWeight: '500' }}
                             >
                                 <option value="">🏫 {t("ថ្នាក់រៀនទាំងអស់", "All Classes")}</option>
-                                {classes.map(c => (
-                                    <option key={c.id} value={c.id}>ថ្នាក់ {c.name}</option>
-                                ))}
+                                {classes.map(c => {
+                                    const streamTag = c.stream === 'science' 
+                                        ? ' • 🧪 វិទ្យាសាស្ត្រ' 
+                                        : c.stream === 'social_science' 
+                                        ? ' • 📜 វិទ្យាសាស្ត្រសង្គម' 
+                                        : '';
+                                    return (
+                                        <option key={c.id} value={c.id}>
+                                            ថ្នាក់ {c.name}{streamTag}
+                                        </option>
+                                    );
+                                })}
                             </select>
                         </div>
 
-                        {(search || selectedClassId) && (
-                            <Button size="small" variant="secondary" onClick={() => { setSearch(''); setSelectedClassId(''); }}>
+                        {(search || selectedClassId || selectedAcademicYear) && (
+                            <Button size="small" variant="secondary" onClick={() => { setSearch(''); setSelectedClassId(''); setSelectedAcademicYear(''); }}>
                                 {t("លុបការស្វែងរក ✖️", "Clear Search ✖️")}
                             </Button>
                         )}

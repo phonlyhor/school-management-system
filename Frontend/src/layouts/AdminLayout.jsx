@@ -6,7 +6,7 @@ import Footer from '../components/layout/Footer';
 import { 
     FiHome, FiUsers, FiUser, FiUserCheck, FiHeart,
     FiBookOpen, FiBook, FiBriefcase, FiCalendar, FiClock, FiFileText,
-    FiMapPin, FiGitBranch, FiSettings, FiBell, FiEdit3, FiPaperclip
+    FiMapPin, FiGitBranch, FiSettings, FiBell, FiEdit3, FiPaperclip, FiAward
 } from 'react-icons/fi';
 
 const menuItems = [
@@ -29,6 +29,7 @@ const menuItems = [
     { label: 'Teacher Assignments', path: '/admin/teacher-assignments', icon: <FiBriefcase /> },
     { label: 'Schedule', path: '/admin/schedule', icon: <FiClock /> },
     { label: 'Attendance', path: '/admin/attendance', icon: <FiCalendar /> },
+    { label: 'Student Promotion', path: '/admin/promotion', icon: <FiAward /> },
     { label: 'សៀវភៅតាមដាន (Logbook)', path: '/admin/monitoring-logbook', icon: <FiFileText /> },
     { label: 'Homework', path: '/admin/homework', icon: <FiPaperclip /> },
     { label: 'Report Cards', path: '/admin/report-cards', icon: <FiFileText /> },

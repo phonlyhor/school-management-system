@@ -114,7 +114,7 @@ class StudentDashboardController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'student_code' => $student->student_code,
-                    'photo' => $student->photo,
+                    'photo' => $student->photo ?? $user->photo,
                     'age' => $student->age,
                     'gender' => $student->gender,
                     'class_position' => $student->class_position ?? 'Member'
@@ -167,10 +167,20 @@ class StudentDashboardController extends Controller
             ]);
         }
 
-        $attendances = Attendance::with(['subject', 'schoolClass'])
-            ->where('student_id', $student->id)
-            ->orderBy('date', 'desc')
-            ->get();
+        $query = Attendance::with(['subject', 'schoolClass'])
+            ->where('student_id', $student->id);
+
+        if ($request->query('date')) {
+            $query->whereDate('date', $request->query('date'));
+        }
+        if ($request->query('month')) {
+            $query->whereMonth('date', $request->query('month'));
+        }
+        if ($request->query('year')) {
+            $query->whereYear('date', $request->query('year'));
+        }
+
+        $attendances = $query->orderBy('date', 'desc')->get();
 
         $total = $attendances->count();
         $present = $attendances->where('status', 'present')->count();

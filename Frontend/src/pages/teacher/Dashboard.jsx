@@ -46,11 +46,38 @@ const TeacherDashboard = () => {
         fetchDashboardData();
     }, []);
 
+    const isTimePassed = (endTimeStr) => {
+        if (!endTimeStr) return false;
+        const now = new Date();
+        const parts = endTimeStr.split(':');
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1] || '0', 10);
+        if (isNaN(h)) return false;
+        const endMinutes = h * 60 + m;
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+        return nowMinutes >= endMinutes;
+    };
+
     const scheduleColumns = [
         { header: t('ថ្នាក់រៀន', 'Class'), render: (row) => <strong>{row.class_name}</strong> },
         { header: t('មុខវិជ្ជា', 'Subject'), render: (row) => row.subject_name },
         { header: t('ម៉ោងសិក្សា', 'Time'), render: (row) => `${row.start_time} - ${row.end_time}` },
         { header: t('បន្ទប់', 'Room'), render: (row) => row.room || 'N/A' },
+        { 
+            header: t('ស្ថានភាព', 'Status'), 
+            render: (row) => {
+                const done = isTimePassed(row.end_time);
+                return done ? (
+                    <span style={{ backgroundColor: '#dcfce7', color: '#15803d', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        ✅ {t("បង្រៀនចប់ហើយ", "Finished")}
+                    </span>
+                ) : (
+                    <span style={{ backgroundColor: '#dbeafe', color: '#1e40af', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        ⏳ {t("ម៉ោងបង្រៀន", "Scheduled")}
+                    </span>
+                );
+            }
+        }
     ];
 
     const performanceColumns = [
@@ -138,6 +165,12 @@ const TeacherDashboard = () => {
             {/* Today's Schedule & My Classes Quick Access */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem', marginTop: '1.5rem' }}>
                 <Card title={`📅 ${t("កាលវិភាគបង្រៀនថ្ងៃនេះ", "Today's Teaching Schedule")}`}>
+                    {todaySchedules.length > 0 && todaySchedules.every(s => isTimePassed(s.end_time)) && (
+                        <div style={{ background: '#dcfce7', border: '1px solid #86efac', color: '#15803d', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span>🎉</span>
+                            <span>{t("ថ្ងៃនេះបង្រៀនចប់ហើយ! សូមសម្រាកឲ្យបានសប្បាយរីករាយ។", "All classes for today have been completed! Have a great rest.")}</span>
+                        </div>
+                    )}
                     {todaySchedules.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#64748b' }}>
                             <p style={{ margin: '0 0 0.5rem 0', fontWeight: '500' }}>{t("មិនមានម៉ោងបង្រៀនសម្រាប់ថ្ងៃនេះទេ", "No classes scheduled for today.")}</p>

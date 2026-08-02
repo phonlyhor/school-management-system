@@ -56,6 +56,39 @@ Route::post('/login', [
     'login'
 ]);
 
+Route::post('/register/student', [
+    AuthController::class,
+    'registerStudent'
+]);
+
+Route::get('/public/classes', [
+    \App\Http\Controllers\AdminClassController::class,
+    'index'
+]);
+
+Route::get('/student/verify/{code}', [
+    \App\Http\Controllers\StudentVerificationController::class,
+    'verify'
+]);
+
+Route::post('/public/forgot-password-request', function (\Illuminate\Http\Request $request) {
+    $request->validate(['email' => 'required|email']);
+    
+    $user = \App\Models\User::where('email', $request->email)->first();
+    if ($user) {
+        $admin = \App\Models\User::where('role_id', 1)->orWhere('email', 'admin@school.com')->first();
+        \App\Models\Notification::create([
+            'title' => '🔑 សំណើស្នើសុំផ្លាស់ប្តូរពាក្យសម្ងាត់',
+            'message' => 'គណនី ' . $user->name . ' (' . $user->email . ') បានស្នើសុំផ្លាស់ប្តូរពាក្យសម្ងាត់ថ្មី។',
+            'type' => 'password_reset',
+            'user_id' => $admin ? $admin->id : 1,
+            'is_read' => false,
+        ]);
+    }
+    
+    return response()->json(['message' => 'Password reset notification sent to Admin successfully']);
+});
+
 
 
 /*
@@ -71,6 +104,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
     Route::put('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
     Route::put('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy']);
+    Route::delete('/notifications', [\App\Http\Controllers\NotificationController::class, 'clearAll']);
 
 
  // All logged-in users can view report
@@ -208,10 +243,9 @@ Route::put('/academic-years/{academicYear}',[
     AcademicYearController::class,
     'update'
 ]);
-Route::delete('/academic-years/{academicYear}',[
-    AcademicYearController::class,
-    'destroy'
-]);
+// Student Promotion & Year-End Rollover
+Route::get('/admin/promotion/preview', [\App\Http\Controllers\AdminPromotionController::class, 'preview']);
+Route::post('/admin/promotion/execute', [\App\Http\Controllers\AdminPromotionController::class, 'execute']);
 
 
     // Semester
@@ -346,6 +380,11 @@ Route::delete('/assessments/{assessment}',[
         Route::get('/teacher/schedule', [
             TeacherScheduleController::class,
             'index'
+        ]);
+
+        Route::get('/teacher/homeroom-schedule', [
+            TeacherScheduleController::class,
+            'homeroomSchedule'
         ]);
 
 

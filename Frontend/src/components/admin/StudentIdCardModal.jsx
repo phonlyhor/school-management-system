@@ -124,10 +124,12 @@ const StudentIdCardModal = ({ isOpen, onClose, student }) => {
                         <div style={{ textAlign: 'left', fontSize: '0.7rem', opacity: 0.75 }}>
                             Official Student Verification Card<br/>Valid Academic Year 2026-2027
                         </div>
-                        <div style={{ background: 'white', padding: '3px', borderRadius: '6px', width: '42px', height: '42px' }}>
-                            <svg viewBox="0 0 100 100" width="100%" height="100%">
-                                <path d="M 0 0 h 40 v 40 h -40 z M 60 0 h 40 v 40 h -40 z M 0 60 h 40 v 40 h -40 z M 10 10 h 20 v 20 h -20 z M 70 10 h 20 v 20 h -20 z M 10 70 h 20 v 20 h -20 z M 60 60 h 20 v 20 h -20 z M 80 80 h 20 v 20 h -20 z" fill="#1e1b4b" />
-                            </svg>
+                        <div style={{ background: 'white', padding: '3px', borderRadius: '6px', width: '50px', height: '50px' }}>
+                            <img 
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(window.location.origin + '/student/verify/' + (student.student_code || student.id))}`} 
+                                alt="QR Code"
+                                style={{ width: '100%', height: '100%', display: 'block' }}
+                            />
                         </div>
                     </div>
                 </div>

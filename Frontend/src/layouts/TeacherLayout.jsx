@@ -13,6 +13,7 @@ const menuItems = [
     { label: 'Homework', path: '/teacher/homework', icon: <FiPaperclip /> },
     { label: 'Scores', path: '/teacher/scores', icon: <FiEdit3 /> },
     { label: 'Schedule', path: '/teacher/schedule', icon: <FiClock /> },
+    { label: 'Homeroom Schedule', path: '/teacher/homeroom-schedule', icon: <FiCalendar /> },
     { label: 'Profile', path: '/teacher/profile', icon: <FiUser /> },
 ];
 

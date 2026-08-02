@@ -5,6 +5,10 @@ export const getTeacherSchedule = async () => {
     return await api.get('/teacher/schedule');
 };
 
+export const getTeacherHomeroomSchedule = async () => {
+    return await api.get('/teacher/homeroom-schedule');
+};
+
 export const getTeacherClasses = async () => {
     return await api.get('/teacher/classes');
 };
