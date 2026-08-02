@@ -69,12 +69,12 @@ function Login() {
     return (
         <div style={{
             minHeight: '100vh',
-            width: '100vw',
+            width: '100%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%)',
-            padding: '2rem 1rem',
+            padding: '1.5rem 1rem',
             boxSizing: 'border-box'
         }}>
             <div style={{ width: '100%', maxWidth: '440px' }}>
@@ -195,14 +195,28 @@ function Login() {
                         <Button
                             type="submit"
                             variant="primary"
+                            disabled={isSubmitting}
                             loading={isSubmitting}
                             style={{
                                 width: '100%', marginTop: '0.2rem', padding: '0.85rem', fontWeight: '700',
-                                fontSize: '0.98rem', backgroundColor: '#4f46e5', borderRadius: '10px',
-                                boxShadow: '0 8px 16px rgba(79, 70, 229, 0.3)', border: 'none'
+                                fontSize: '0.98rem', backgroundColor: isSubmitting ? '#6366f1' : '#4f46e5', borderRadius: '10px',
+                                boxShadow: '0 8px 16px rgba(79, 70, 229, 0.3)', border: 'none',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                opacity: isSubmitting ? 0.85 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer'
                             }}
                         >
-                            🚀 {t("ចូលប្រព័ន្ធ (Login)", "Login")}
+                            {isSubmitting ? (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem' }}>
+                                    <span style={{
+                                        width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.35)',
+                                        borderTopColor: '#ffffff', borderRadius: '50%', display: 'inline-block',
+                                        animation: 'spin 0.75s linear infinite'
+                                    }} />
+                                    <span>{t("កំពុងចូលប្រើប្រាស់...", "Logging in...")}</span>
+                                </span>
+                            ) : (
+                                <span>🚀 {t("ចូលប្រព័ន្ធ (Login)", "Login")}</span>
+                            )}
                         </Button>
 
                         {/* Register Link */}

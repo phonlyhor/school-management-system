@@ -587,14 +587,19 @@ const Teachers = () => {
                                 <option value="">-- {t("គ្មានថ្នាក់បន្ទុក (គ្រូមុខវិជ្ជា)", "No Homeroom (Subject Teacher Only)")} --</option>
                                 {classes.map(c => {
                                     const assignedTeacher = teachers.find(tItem => 
-                                        tItem.id !== editingId && 
+                                        String(tItem.id) !== String(editingId) && 
                                         tItem.teacher_class_assignments?.some(a => String(a.class_id) === String(c.id))
                                     );
 
                                     const isTakenByOther = !!assignedTeacher;
 
                                     return (
-                                        <option key={c.id} value={c.id} disabled={isTakenByOther}>
+                                        <option 
+                                            key={c.id} 
+                                            value={c.id} 
+                                            disabled={isTakenByOther}
+                                            style={{ color: isTakenByOther ? '#94a3b8' : '#0f172a', backgroundColor: isTakenByOther ? '#f1f5f9' : '#ffffff' }}
+                                        >
                                             👑 {c.name} ({c.grade_level}) {isTakenByOther ? `❌ (${t("មានគ្រូបន្ទុក: ", "Has Teacher: ")}${assignedTeacher.name})` : ''}
                                         </option>
                                     );

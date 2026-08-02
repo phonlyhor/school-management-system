@@ -30,12 +30,17 @@ const MyClasses = () => {
     const [reportData, setReportData] = useState(null);
     const [loadingReport, setLoadingReport] = useState(false);
 
+    const [allowGlobalRegistration, setAllowGlobalRegistration] = useState(true);
+
     useEffect(() => {
         const fetchSchedule = async () => {
             setLoading(true);
             try {
                 const res = await getTeacherSchedule();
                 setSchedule(res.data.schedule || []);
+                if (res.data.allow_student_registration !== undefined) {
+                    setAllowGlobalRegistration(res.data.allow_student_registration);
+                }
             } catch (err) {
                 console.error("Failed to load classes:", err);
                 toast.error("Failed to load assigned classes.");
@@ -77,12 +82,16 @@ const MyClasses = () => {
             classMap.set(item.class.id, {
                 ...item.class,
                 is_homeroom: item.class.is_homeroom || false,
+                is_registration_open: item.class.is_registration_open !== false,
                 subjects: [item.subject?.name].filter(Boolean)
             });
         } else if (item.class) {
             const existing = classMap.get(item.class.id);
             if (item.class.is_homeroom) {
                 existing.is_homeroom = true;
+            }
+            if (item.class.is_registration_open !== undefined) {
+                existing.is_registration_open = item.class.is_registration_open !== false;
             }
             if (item.subject?.name && !existing.subjects.includes(item.subject.name)) {
                 existing.subjects.push(item.subject.name);
@@ -98,6 +107,30 @@ const MyClasses = () => {
 
     const [isHomeroom, setIsHomeroom] = useState(false);
     const [todayAttendances, setTodayAttendances] = useState([]);
+    const [subjectTeachers, setSubjectTeachers] = useState([]);
+    const [selectedStudentScores, setSelectedStudentScores] = useState(null);
+
+    const [togglingClassId, setTogglingClassId] = useState(null);
+
+    const handleCopyClassRegisterLink = (cls) => {
+        const url = `${window.location.origin}/register/student?class_id=${cls.id}`;
+        navigator.clipboard.writeText(url);
+        toast.success(`បានចម្លង Link ចុះឈ្មោះសម្រាប់ថ្នាក់ ${cls.name} រួចរាល់! អាចផ្ញើទៅកាន់ Telegram Group សិស្សបាន`);
+    };
+
+    const handleToggleRegistration = async (cls) => {
+        setTogglingClassId(cls.id);
+        try {
+            const res = await api.post(`/teacher/classes/${cls.id}/toggle-registration`);
+            toast.success(res.data.message);
+            const schedRes = await getTeacherSchedule();
+            setSchedule(schedRes.data.schedule || []);
+        } catch (err) {
+            toast.error(err.response?.data?.message || "មានបញ្ហាក្នុងការកំណត់ការចុះឈ្មោះ");
+        } finally {
+            setTogglingClassId(null);
+        }
+    };
 
     const handleViewStudents = async (cls) => {
         setSelectedClass(cls);
@@ -107,6 +140,7 @@ const MyClasses = () => {
             setStudents(res.data.students || []);
             setIsHomeroom(res.data.is_homeroom || false);
             setTodayAttendances(res.data.today_attendances || []);
+            setSubjectTeachers(res.data.subject_teachers || []);
         } catch (err) {
             console.error("Failed to load students:", err);
             toast.error("Failed to load student roster.");
@@ -282,16 +316,29 @@ const MyClasses = () => {
             ) 
         },
         {
-            header: 'Actions',
+            header: 'Actions (សកម្មភាព)',
             render: (row) => (
-                <Button 
-                    size="small" 
-                    variant="secondary" 
-                    onClick={() => setViewingStudent(row)}
-                    title="View All Details"
-                >
-                    👁️ View Details
-                </Button>
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <Button 
+                        size="small" 
+                        variant="secondary" 
+                        onClick={() => setViewingStudent(row)}
+                        title="View All Details"
+                    >
+                        👁️ ព័ត៌មានសិស្ស
+                    </Button>
+
+                    {isHomeroom && (
+                        <Button 
+                            size="small" 
+                            onClick={() => setSelectedStudentScores(row)}
+                            style={{ backgroundColor: '#f0fdf4', color: '#15803d', borderColor: '#bbf7d0', fontSize: '0.82rem', fontWeight: '700' }}
+                            title="មើលពិន្ទុ និង គ្រូបង្រៀនតាមមុខវិជ្ជា"
+                        >
+                            📊 មើលពិន្ទុ & គ្រូបង្រៀន
+                        </Button>
+                    )}
+                </div>
             )
         }
     ];
@@ -368,6 +415,42 @@ const MyClasses = () => {
                                     <strong style={{ color: '#334155' }}>📘 មុខវិជ្ជាបង្រៀន (Taught Subjects) ៖</strong> {cls.subjects.join(', ') || 'N/A'}
                                 </p>
                             </div>
+
+                            {allowGlobalRegistration && cls.is_homeroom && cls.is_registration_open !== false && (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: cls.is_registration_open !== false ? '#f0fdf4' : '#fef2f2', padding: '0.45rem 0.75rem', borderRadius: '8px', border: cls.is_registration_open !== false ? '1px solid #bbf7d0' : '1px solid #fca5a5', marginTop: '0.75rem', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                        <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#334155' }}>
+                                            📝 ការចុះឈ្មោះ ៖
+                                        </span>
+                                        <span style={{
+                                            padding: '0.2rem 0.55rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: '700',
+                                            backgroundColor: cls.is_registration_open !== false ? '#dcfce7' : '#fee2e2',
+                                            color: cls.is_registration_open !== false ? '#15803d' : '#991b1b',
+                                            border: cls.is_registration_open !== false ? '1px solid #86efac' : '1px solid #fca5a5'
+                                        }}>
+                                            {cls.is_registration_open !== false ? '🟢 កំពុងបើក' : '🔴 បានបិទ'}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <button
+                                            onClick={() => handleCopyClassRegisterLink(cls)}
+                                            title="ចម្លង Link ចុះឈ្មោះផ្ញើទៅសិស្ស"
+                                            style={{ background: '#ffffff', color: '#0284c7', border: '1px solid #bae6fd', borderRadius: '6px', padding: '0.3rem 0.65rem', fontSize: '0.78rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                        >
+                                            🔗 Link ចុះឈ្មោះ
+                                        </button>
+                                        <a
+                                            href={`https://t.me/share/url?url=${encodeURIComponent(`${window.location.origin}/register/student?class_id=${cls.id}`)}&text=${encodeURIComponent(`🔗 Link ចុះឈ្មោះចូលរៀនសម្រាប់ថ្នាក់ ${cls.name}`)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            title="ផ្ញើ Link ចុះឈ្មោះទៅកាន់ Telegram"
+                                            style={{ background: '#0088cc', color: '#ffffff', border: '1px solid #0088cc', borderRadius: '6px', padding: '0.3rem 0.65rem', fontSize: '0.78rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', textDecoration: 'none' }}
+                                        >
+                                            ✈️ ផ្ញើ Telegram
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
                         </Card>
                     ))}
                 </div>
@@ -514,11 +597,35 @@ const MyClasses = () => {
             >
                 <div style={{ marginBottom: '1rem', color: '#475569', fontSize: '0.9rem', background: isHomeroom ? '#f8fafc' : '#f0f9ff', padding: '0.75rem', borderRadius: '8px', border: isHomeroom ? '1px solid #e2e8f0' : '1px solid #bae6fd' }}>
                     {isHomeroom ? (
-                        <span>💡 <strong>Homeroom Teacher Portal:</strong> You can assign <strong>Class Monitor (ប្រធានថ្នាក់)</strong>, <strong>Vice Monitor (អនុប្រធានថ្នាក់)</strong>, and click <strong>👁️ View Details</strong> to view complete personal and family contact info for any student in your class.</span>
+                        <span>💡 <strong>Homeroom Teacher Portal (គ្រប់គ្រងថ្នាក់បន្ទុក) ៖</strong> អ្នកអាចចាត់តាំងប្រធានថ្នាក់/អនុប្រធានថ្នាក់, ចុច <strong>📊 មើលពិន្ទុ & គ្រូបង្រៀន</strong> ដើម្បិមើលពិន្ទុ និង គ្រូបង្រៀនតាមមុខវិជ្ជា ព្រមទាំងចុច <strong>👁️ ព័ត៌មានសិស្ស</strong> ដើម្បិមើលព័ត៌មានលម្អិត។</span>
                     ) : (
                         <span>📘 <strong>Subject Teacher View (មើលបញ្ជីឈ្មោះសិស្ស):</strong> អ្នកអាចមើលបញ្ជីឈ្មោះសិស្សក្នុងថ្នាក់បាន។ (តួនាទីចាត់តាំងប្រធានថ្នាក់ មានសម្រាប់តែ <strong>គ្រូបន្ទុកថ្នាក់ / Homeroom Teacher</strong> ប៉ុណ្ណោះ)</span>
                     )}
                 </div>
+
+                {/* Subject Teachers Banner for Homeroom Teacher */}
+                {isHomeroom && subjectTeachers.length > 0 && (
+                    <div style={{ background: '#f0f9ff', padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid #bae6fd', marginBottom: '1rem' }}>
+                        <strong style={{ color: '#0369a1', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                            👨‍🏫 បញ្ជីគ្រូបង្រៀនតាមមុខវិជ្ជាក្នុងថ្នាក់បន្ទុកនេះ (Subject Teachers of Class {selectedClass?.name}) ៖
+                        </strong>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '0.5rem' }}>
+                            {subjectTeachers.map(st => (
+                                <div key={st.subject_id} style={{ background: '#ffffff', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #e0f2fe', fontSize: '0.82rem' }}>
+                                    <div style={{ fontWeight: '700', color: '#0284c7' }}>📘 {st.subject_name} ({st.subject_code})</div>
+                                    <div style={{ color: '#334155', fontWeight: '700', marginTop: '2px' }}>
+                                        👨‍🏫 {st.teacher_name}
+                                    </div>
+                                    {st.study_times && st.study_times.length > 0 && (
+                                        <div style={{ color: '#059669', fontSize: '0.78rem', fontWeight: '700', marginTop: '4px', background: '#ecfdf5', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid #a7f3d0' }}>
+                                            ⏰ ម៉ោងសិក្សា ៖ {st.study_times.join(', ')}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {todayAttendances.length > 0 && (
                     <div style={{ background: '#fff7ed', padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid #fed7aa', marginBottom: '1rem' }}>
@@ -802,6 +909,95 @@ const MyClasses = () => {
                         </div>
                     </div>
                 ) : null}
+            </Modal>
+
+            {/* Student Scores & Subject Teachers Modal for Homeroom Teacher */}
+            <Modal
+                isOpen={!!selectedStudentScores}
+                onClose={() => setSelectedStudentScores(null)}
+                title={
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <span style={{ background: '#dcfce7', color: '#15803d', padding: '0.35rem 0.65rem', borderRadius: '8px', fontSize: '1.1rem' }}>📊</span>
+                        <span>ពិន្ទុ និង គ្រូបង្រៀនតាមមុខវិជ្ជា ៖ {selectedStudentScores?.user?.name || selectedStudentScores?.name}</span>
+                    </div>
+                }
+                maxWidth="850px"
+                footer={<Button variant="secondary" onClick={() => setSelectedStudentScores(null)}>បិទ (Close)</Button>}
+            >
+                {selectedStudentScores && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        {/* Student Summary Banner */}
+                        <div style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', padding: '1rem 1.25rem', borderRadius: '12px', border: '1px solid #bbf7d0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#16a34a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 'bold' }}>
+                                    🎓
+                                </div>
+                                <div>
+                                    <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#14532d', fontWeight: '800' }}>{selectedStudentScores.user?.name || selectedStudentScores.name}</h3>
+                                    <span style={{ fontSize: '0.82rem', color: '#166534', fontWeight: '700' }}>
+                                        កូដសិស្ស ៖ {selectedStudentScores.student_code} | តួនាទី ៖ {selectedStudentScores.class_position || 'សមាជិកថ្នាក់ (Member)'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <span style={{ backgroundColor: '#ffffff', padding: '0.4rem 0.85rem', borderRadius: '8px', fontWeight: '800', color: '#15803d', fontSize: '0.88rem', border: '1px solid #86efac' }}>
+                                🏫 ថ្នាក់ ៖ {selectedClass?.name}
+                            </span>
+                        </div>
+
+                        {/* Subject Scores Table */}
+                        {(!selectedStudentScores.scores || selectedStudentScores.scores.length === 0) ? (
+                            <div style={{ textAlign: 'center', padding: '2.5rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', color: '#64748b' }}>
+                                <p style={{ fontSize: '1rem', fontWeight: '600', margin: 0 }}>📭 មិនទាន់មានទិន្នន័យពិន្ទុដែលបានបញ្ចូលសម្រាប់សិស្សនេះនៅឡើយទេ។</p>
+                                <span style={{ fontSize: '0.82rem' }}>នៅពេលគ្រូបង្រៀនតាមមុខវិជ្ជាបញ្ចូលពិន្ទុ វានឹងបង្ហាញនៅទីនេះភ្លាមៗ។</span>
+                            </div>
+                        ) : (
+                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                                    <thead>
+                                        <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #cbd5e1', textAlign: 'left' }}>
+                                            <th style={{ padding: '0.75rem 1rem' }}>📘 មុខវិជ្ជា (Subject)</th>
+                                            <th style={{ padding: '0.75rem 1rem' }}>👨‍🏫 គ្រូបង្រៀន (Teacher)</th>
+                                            <th style={{ padding: '0.75rem 1rem' }}>📝 ការវាយតម្លៃ (Assessment)</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>💯 ពិន្ទុ (Score)</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>📊 ភាគរយ (%)</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>🏆 និទ្ទេស (Grade)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {selectedStudentScores.scores.map((sc, idx) => (
+                                            <tr key={sc.id || idx} style={{ borderBottom: '1px solid #f1f5f9', background: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+                                                <td style={{ padding: '0.75rem 1rem' }}>
+                                                    <strong style={{ color: '#0369a1' }}>📘 {sc.subject_name || 'N/A'}</strong>
+                                                    <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{sc.subject_code}</div>
+                                                </td>
+                                                <td style={{ padding: '0.75rem 1rem', fontWeight: '700', color: '#334155' }}>
+                                                    👨‍🏫 {sc.teacher_name || 'មិនទាន់កំណត់'}
+                                                </td>
+                                                <td style={{ padding: '0.75rem 1rem', color: '#475569' }}>
+                                                    {sc.assessment_name || 'ការវាយតម្លៃទូទៅ'}
+                                                </td>
+                                                <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: '800', color: '#0f172a' }}>
+                                                    {sc.score} / {sc.max_score}
+                                                </td>
+                                                <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                                                    <span style={{ fontWeight: '800', color: sc.percentage >= 50 ? '#15803d' : '#dc2626', backgroundColor: sc.percentage >= 50 ? '#dcfce7' : '#fee2e2', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.82rem' }}>
+                                                        {sc.percentage}%
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                                                    <span style={{ fontWeight: '800', color: '#1e40af', backgroundColor: '#dbeafe', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.82rem' }}>
+                                                        {sc.grade || 'N/A'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                )}
             </Modal>
         </div>
     );

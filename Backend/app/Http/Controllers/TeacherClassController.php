@@ -71,7 +71,8 @@ class TeacherClassController extends Controller
             'class'=>[
                 'id'=>$class->id,
                 'name'=>$class->name,
-                'grade_level'=>$class->grade_level
+                'grade_level'=>$class->grade_level,
+                'is_registration_open'=>(bool)($class->is_registration_open ?? true)
             ],
 
 
@@ -104,4 +105,36 @@ class TeacherClassController extends Controller
 
     }
 
+    // Toggle class registration status (Open/Close student self-registration for this class)
+    public function toggleRegistration(Request $request, $class_id)
+    {
+        $teacher = $request->user();
+
+        // Check if authorized (Admin or Homeroom Teacher for this class)
+        $isAuthorized = ($teacher->role_id == 1) || TeacherClassAssignment::where('teacher_id', $teacher->id)->where('class_id', $class_id)->exists();
+
+        if (!$isAuthorized) {
+            return response()->json([
+                'message' => 'អ្នកមិនមានសិទ្ធិកំណត់ការចុះឈ្មោះសម្រាប់ថ្នាក់នេះទេ! (មានសិទ្ធិតែគ្រូបន្ទុកថ្នាក់ ឬ Admin)'
+            ], 403);
+        }
+
+        $class = SchoolClass::findOrFail($class_id);
+        
+        if ($request->has('is_open')) {
+            $class->is_registration_open = (bool)$request->is_open;
+        } else {
+            $class->is_registration_open = !$class->is_registration_open;
+        }
+        
+        $class->save();
+
+        $statusText = $class->is_registration_open ? 'បើក' : 'បិទ';
+
+        return response()->json([
+            'message' => "បាន{$statusText}ការចុះឈ្មោះសិស្សសម្រាប់ថ្នាក់ {$class->name} ដោយជោគជ័យ!",
+            'is_registration_open' => (bool)$class->is_registration_open,
+            'class' => $class
+        ]);
+    }
 }

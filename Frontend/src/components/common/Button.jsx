@@ -8,7 +8,10 @@ const Button = ({
     size = 'medium', 
     fullWidth = false, 
     disabled = false,
-    className = ''
+    loading = false,
+    className = '',
+    style = {},
+    title
 }) => {
     
     const combinedClasses = [
@@ -24,7 +27,9 @@ const Button = ({
             type={type} 
             className={combinedClasses} 
             onClick={onClick}
-            disabled={disabled}
+            disabled={disabled || loading}
+            style={style}
+            title={title}
         >
             {children}
         </button>

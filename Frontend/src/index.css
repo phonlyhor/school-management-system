@@ -259,13 +259,21 @@ button, input, select, textarea {
 
   .page-header {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
+    align-items: stretch;
+    gap: 0.85rem;
   }
 
   .dashboard-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+
+  /* Responsive Tables Wrapper */
+  .table-responsive, table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Prevent auto-zoom on iOS mobile inputs */
@@ -300,11 +308,22 @@ button, input, select, textarea {
 
 @media (max-width: 480px) {
   .page-content {
-    padding: 0.75rem;
-    gap: 0.85rem;
+    padding: 0.65rem;
+    gap: 0.75rem;
   }
 
   .page-title {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
+  }
+
+  /* Ensure inputs and buttons stretch cleanly on small phones */
+  button, input, select {
+    box-sizing: border-box;
   }
 }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+

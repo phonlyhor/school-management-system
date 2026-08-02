@@ -16,6 +16,7 @@ class AdminHomeroomController extends Controller
         ])->get();
 
         return response()->json([
+            'homerooms' => $assignments,
             'assignments' => $assignments
         ]);
     }

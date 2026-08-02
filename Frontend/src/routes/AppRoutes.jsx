@@ -26,6 +26,7 @@ import AdminStudents from "../pages/admin/Students";
 import AdminTeachers from "../pages/admin/Teachers";
 import AdminParents from "../pages/admin/Parents";
 import AdminClasses from "../pages/admin/Classes";
+import StudentRegistrationManager from "../pages/admin/StudentRegistrationManager";
 import AdminBuildings from "../pages/admin/Buildings";
 import AdminOrgChart from "../pages/admin/OrgChart";
 import AdminSubjects from "../pages/admin/Subjects";
@@ -45,6 +46,7 @@ import TeacherAttendance from "../pages/teacher/Attendance";
 import TeacherScores from "../pages/teacher/Scores";
 import TeacherSchedule from "../pages/teacher/Schedule";
 import HomeroomSchedule from "../pages/teacher/HomeroomSchedule";
+import HomeroomScores from "../pages/teacher/HomeroomScores";
 import TeacherProfile from "../pages/teacher/Profile";
 
 // Student
@@ -90,6 +92,7 @@ const AppRoutes = () => {
                 <Route path="teachers" element={<AdminTeachers />} />
                 <Route path="parents" element={<AdminParents />} />
                 <Route path="classes" element={<AdminClasses />} />
+                <Route path="student-registration" element={<StudentRegistrationManager />} />
                 <Route path="buildings" element={<AdminBuildings />} />
                 <Route path="org-chart" element={<AdminOrgChart />} />
                 <Route path="subjects" element={<AdminSubjects />} />
@@ -121,6 +124,7 @@ const AppRoutes = () => {
                 <Route path="scores" element={<TeacherScores />} />
                 <Route path="schedule" element={<TeacherSchedule />} />
                 <Route path="homeroom-schedule" element={<HomeroomSchedule />} />
+                <Route path="homeroom-scores" element={<HomeroomScores />} />
                 <Route path="leave-requests" element={<LeaveRequests />} />
                 <Route path="announcements" element={<Announcements />} />
                 <Route path="homework" element={<HomeworkPage />} />

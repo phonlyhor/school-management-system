@@ -79,6 +79,23 @@ class AuthController extends Controller
             'mother_phone.regex' => 'លេខទូរស័ព្ទម្តាយមិនត្រឹមត្រូវទេ! (ឧទាហរណ៍ ៖ 012345678)',
         ]);
 
+        // Global Registration Status Check
+        $allowGlobalRegistration = \App\Models\SystemSetting::get('allow_student_registration', 'true') === 'true';
+        if (!$allowGlobalRegistration) {
+            return response()->json([
+                'message' => 'ការចុះឈ្មោះសិស្សថ្មីតាមប្រព័ន្ធអនឡាញត្រូវបានបិទជាបណ្ដោះអាសន្នដោយ Admin!'
+            ], 422);
+        }
+
+        if ($request->filled('class_id')) {
+            $schoolClass = \App\Models\SchoolClass::find($request->class_id);
+            if ($schoolClass && isset($schoolClass->is_registration_open) && !$schoolClass->is_registration_open) {
+                return response()->json([
+                    'message' => "ការចុះឈ្មោះសម្រាប់ថ្នាក់ {$schoolClass->name} ត្រូវបានបិទជាបណ្ដោះអាសន្នដោយគ្រូបន្ទុកថ្នាក់!"
+                ], 422);
+            }
+        }
+
         $studentRole = Role::where('name', 'student')->first();
 
         // Photo Upload Handling
@@ -153,9 +170,8 @@ class AuthController extends Controller
         $user = $request->user()->load('role');
 
         $student = Student::with('schoolClass')->where('user_id', $user->id)->first();
-        $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
 
-        $photo = $student?->photo ?? $teacher?->photo ?? null;
+        $photo = $student?->photo ?? $user->photo ?? null;
 
         return response()->json([
             'user' => [
@@ -167,9 +183,9 @@ class AuthController extends Controller
                 'student_code' => $student?->student_code,
                 'class' => $student?->schoolClass?->name,
                 'grade_level' => $student?->schoolClass?->grade_level,
-                'gender' => $student?->gender,
-                'dob' => $student?->dob,
-                'phone' => $student?->phone ?? $teacher?->phone
+                'gender' => $student?->gender ?? $user->gender,
+                'dob' => $student?->dob ?? $user->date_of_birth,
+                'phone' => $student?->phone ?? $user->phone
             ],
         ]);
     }

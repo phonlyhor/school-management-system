@@ -6,7 +6,7 @@ import Footer from '../components/layout/Footer';
 import { 
     FiHome, FiUsers, FiUser, FiUserCheck, FiHeart,
     FiBookOpen, FiBook, FiBriefcase, FiCalendar, FiClock, FiFileText,
-    FiMapPin, FiGitBranch, FiSettings, FiBell, FiEdit3, FiPaperclip, FiAward
+    FiMapPin, FiGitBranch, FiSettings, FiBell, FiEdit3, FiPaperclip, FiAward, FiLink
 } from 'react-icons/fi';
 
 const menuItems = [
@@ -25,7 +25,7 @@ const menuItems = [
     // Academic Management
     { isHeader: true, label: 'Academic / ការសិក្សា' },
     { label: 'Classes', path: '/admin/classes', icon: <FiBookOpen /> },
-    { label: 'Subjects', path: '/admin/subjects', icon: <FiBook /> },
+    { label: 'Subjects / ពិន្ទុមុខវិជ្ជា', path: '/admin/subjects', icon: <FiBook /> },
     { label: 'Teacher Assignments', path: '/admin/teacher-assignments', icon: <FiBriefcase /> },
     { label: 'Schedule', path: '/admin/schedule', icon: <FiClock /> },
     { label: 'Attendance', path: '/admin/attendance', icon: <FiCalendar /> },

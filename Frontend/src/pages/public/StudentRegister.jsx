@@ -48,17 +48,34 @@ const StudentRegister = () => {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const [globalRegistrationAllowed, setGlobalRegistrationAllowed] = useState(true);
+
     useEffect(() => {
-        const fetchClasses = async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const classParam = urlParams.get('class_id');
+        if (classParam) {
+            setFormData(prev => ({ ...prev, class_id: classParam }));
+        }
+
+        const fetchInitialData = async () => {
             try {
-                const res = await api.get('/public/classes');
-                setClasses(res.data.classes || res.data || []);
+                const [classRes, settingsRes] = await Promise.all([
+                    api.get('/public/classes'),
+                    api.get('/public/settings').catch(() => ({ data: { allow_student_registration: true } }))
+                ]);
+                setClasses(classRes.data.classes || classRes.data || []);
+                if (settingsRes.data?.allow_student_registration === false) {
+                    setGlobalRegistrationAllowed(false);
+                }
             } catch (err) {
                 console.error("Failed to load classes for registration:", err);
             }
         };
-        fetchClasses();
+        fetchInitialData();
     }, []);
+
+    const selectedClass = classes.find(c => String(c.id) === String(formData.class_id));
+    const isRegistrationClosed = !globalRegistrationAllowed || (selectedClass && selectedClass.is_registration_open === false);
 
     const handleChange = (e) => {
         setFormData({
@@ -228,6 +245,15 @@ const StudentRegister = () => {
                         </button>
                     </div>
 
+                    {isRegistrationClosed && (
+                        <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', padding: '0.85rem 1rem', borderRadius: '10px', color: '#991b1b', fontSize: '0.9rem', fontWeight: '700', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            🔒 {!globalRegistrationAllowed 
+                                ? t("ការចុះឈ្មោះសិស្សថ្មីតាមប្រព័ន្ធអនឡាញត្រូវបានបិទជាបណ្ដោះអាសន្នដោយ Admin!", "Public student registration is currently closed by Admin!") 
+                                : t(`ការចុះឈ្មោះសម្រាប់ថ្នាក់ ${selectedClass?.name || ''} ត្រូវបានបិទជាបណ្ដោះអាសន្នដោយគ្រូបន្ទុកថ្នាក់!`, `Student registration for class ${selectedClass?.name || ''} is currently closed by the homeroom teacher!`)
+                            }
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         
                         {/* TAB 1: Student Personal Details */}
@@ -324,14 +350,15 @@ const StudentRegister = () => {
                                         >
                                             <option value="">-- {t("ជ្រើសរើសថ្នាក់រៀន", "Select Class")} --</option>
                                             {classes.map(c => {
+                                                const isClosed = c.is_registration_open === false;
                                                 const streamTag = c.stream === 'science' 
                                                     ? ' • 🧪 វិទ្យាសាស្ត្រ' 
                                                     : c.stream === 'social_science' 
                                                     ? ' • 📜 វិទ្យាសាស្ត្រសង្គម' 
                                                     : '';
                                                 return (
-                                                    <option key={c.id} value={c.id}>
-                                                        🏫 {c.name} ({t("ថ្នាក់ទី", "Grade")} {c.grade_level}){streamTag}
+                                                    <option key={c.id} value={c.id} disabled={isClosed} style={{ color: isClosed ? '#94a3b8' : '#0f172a' }}>
+                                                        🏫 {c.name} ({t("ថ្នាក់ទី", "Grade")} {c.grade_level}){streamTag} {isClosed ? `🔒 (${t("បិទចុះឈ្មោះ", "Closed")})` : ''}
                                                     </option>
                                                 );
                                             })}
@@ -457,7 +484,8 @@ const StudentRegister = () => {
                                         type="submit" 
                                         variant="primary" 
                                         loading={isSubmitting}
-                                        style={{ flex: 2, padding: '0.75rem', fontWeight: '700', backgroundColor: '#4f46e5' }}
+                                        disabled={isSubmitting || isRegistrationClosed}
+                                        style={{ flex: 2, padding: '0.75rem', fontWeight: '700', backgroundColor: isRegistrationClosed ? '#94a3b8' : '#4f46e5' }}
                                     >
                                         🚀 {t("ចុះឈ្មោះឥឡូវនេះ (Register Now)", "Register Account")}
                                     </Button>

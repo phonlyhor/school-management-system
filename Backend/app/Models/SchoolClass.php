@@ -13,6 +13,11 @@ class SchoolClass extends Model
         'grade_level',
         'stream',
         'academic_year',
+        'is_registration_open',
+    ];
+
+    protected $casts = [
+        'is_registration_open' => 'boolean',
     ];
     // SchoolClass has many students
  public function students()

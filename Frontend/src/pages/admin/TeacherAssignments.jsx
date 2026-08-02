@@ -57,6 +57,23 @@ const TeacherAssignments = () => {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Eye View Details Modal State
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [selectedTeacherForView, setSelectedTeacherForView] = useState(null);
+
+    const handleViewTeacherDetails = (cardData) => {
+        setSelectedTeacherForView(cardData);
+        setIsViewModalOpen(true);
+    };
+
+    const handleViewTeacherDetailsByTeacherId = (teacherId) => {
+        const cardData = teacherCardsData.find(c => c.teacher.id === teacherId);
+        if (cardData) {
+            setSelectedTeacherForView(cardData);
+            setIsViewModalOpen(true);
+        }
+    };
+
     const getImageUrl = (photo) => {
         if (!photo) return null;
         if (photo.startsWith('http://') || photo.startsWith('https://')) return photo;
@@ -78,7 +95,7 @@ const TeacherAssignments = () => {
             ]);
 
             setAssignments(assignRes.data.assignments || []);
-            setHomerooms(homeRes.data.homerooms || []);
+            setHomerooms(homeRes.data.homerooms || homeRes.data.assignments || []);
 
             const allUsers = userRes.data.users || [];
             setTeachers(allUsers.filter(u => parseInt(u.role_id) === 2));
@@ -234,6 +251,7 @@ const TeacherAssignments = () => {
             header: t('សកម្មភាព', 'Actions'), 
             render: (row) => (
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <Button size="small" variant="secondary" onClick={() => handleViewTeacherDetailsByTeacherId(row.teacher_id)}>👁️ {t("មើល", "View")}</Button>
                     <Button size="small" variant="secondary" onClick={() => handleEditSubject(row)}>{t("កែប្រែ", "Edit")}</Button>
                     <Button size="small" variant="danger" onClick={() => handleDeleteSubject(row.id)}>{t("លុប", "Delete")}</Button>
                 </div>
@@ -257,6 +275,7 @@ const TeacherAssignments = () => {
             header: t('សកម្មភាព', 'Actions'), 
             render: (row) => (
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <Button size="small" variant="secondary" onClick={() => handleViewTeacherDetailsByTeacherId(row.teacher_id)}>👁️ {t("មើល", "View")}</Button>
                     <Button size="small" variant="secondary" onClick={() => handleEditHomeroom(row)}>{t("កែប្រែ", "Edit")}</Button>
                     <Button size="small" variant="danger" onClick={() => handleDeleteHomeroom(row.id)}>{t("លុប", "Delete")}</Button>
                 </div>
@@ -473,125 +492,87 @@ const TeacherAssignments = () => {
                             {t("មិនមានទិន្នន័យគ្រូបង្រៀនត្រឹមត្រូវតាមការស្វែងរកឡើយ", "No teacher assignments found.")}
                         </Card>
                     ) : (
-                        teacherCardsData.map(({ teacher, homerooms: tHomes, subjectGroups }) => {
+                        teacherCardsData.map((cardData) => {
+                            const { teacher, homerooms: tHomes, subjectGroups } = cardData;
                             const img = getImageUrl(teacher.photo);
                             return (
                                 <div key={teacher.id} style={{
                                     background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0',
                                     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)', padding: '1.25rem',
-                                    display: 'flex', flexDirection: 'column', gap: '1rem'
+                                    display: 'flex', flexDirection: 'column', gap: '0.85rem'
                                 }}>
                                     {/* Teacher Header */}
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                                            {img ? (
-                                                <img src={img} alt={teacher.name} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #16a34a' }} />
-                                            ) : (
-                                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                                                    {teacher.name?.charAt(0) || 'T'}
-                                                </div>
-                                            )}
-                                            <div>
-                                                <strong style={{ fontSize: '1.05rem', color: '#0f172a', display: 'block' }}>{teacher.name}</strong>
-                                                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>📘 {teacher.specialization || 'General'}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                                        {img ? (
+                                            <img src={img} alt={teacher.name} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #16a34a' }} />
+                                        ) : (
+                                            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.2rem' }}>
+                                                {teacher.name?.charAt(0) || 'T'}
                                             </div>
+                                        )}
+                                        <div style={{ flex: 1 }}>
+                                            <strong style={{ fontSize: '1.05rem', color: '#0f172a', display: 'block' }}>{teacher.name}</strong>
+                                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>📘 {teacher.specialization || 'General'}</span>
                                         </div>
+                                    </div>
 
-                                        {/* Quick Add Assignment Button */}
-                                        <button 
+                                    {/* Homeroom Assignment Badge */}
+                                    {tHomes.length > 0 ? (
+                                        <div style={{ background: '#dcfce7', padding: '0.45rem 0.75rem', borderRadius: '8px', border: '1px solid #bbf7d0', fontSize: '0.83rem', fontWeight: '700', color: '#15803d', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                            👑 {t("គ្រូបន្ទុកថ្នាក់៖", "Homeroom:")} ថ្នាក់ {tHomes.map(h => h.school_class?.name).join(', ')}
+                                        </div>
+                                    ) : (
+                                        <div style={{ background: '#f8fafc', padding: '0.4rem 0.75rem', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                                            {t("មិនទាន់មានថ្នាក់បន្ទុក", "No Homeroom assigned")}
+                                        </div>
+                                    )}
+
+                                    {/* Teaching Subject Summary */}
+                                    <div style={{ flex: 1 }}>
+                                        <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '0.4rem' }}>
+                                            📘 {t("មុខវិជ្ជាបង្រៀន", "Teaching Subjects")} ({subjectGroups.length})
+                                        </span>
+                                        {subjectGroups.length > 0 ? (
+                                            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                                                {subjectGroups.map((grp, idx) => (
+                                                    <span key={idx} style={{ background: '#e0f2fe', color: '#0369a1', padding: '0.25rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '700', border: '1px solid #bae6fd' }}>
+                                                        📘 {grp.name} ({grp.classes.length} ថ្នាក់)
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <span style={{ fontStyle: 'italic', color: '#94a3b8', fontSize: '0.82rem' }}>{t("មិនទាន់ចាត់មុខវិជ្ជា", "No subject assignments yet")}</span>
+                                        )}
+                                    </div>
+
+                                    {/* Action Buttons: View Details & Quick Assign */}
+                                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
+                                        <button
+                                            onClick={() => handleViewTeacherDetails(cardData)}
+                                            style={{
+                                                flex: 1, background: '#4f46e5', color: '#ffffff', border: 'none',
+                                                padding: '0.55rem 0.75rem', borderRadius: '8px', fontSize: '0.83rem',
+                                                fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                                                justifyContent: 'center', gap: '0.35rem', boxShadow: '0 2px 4px rgba(79, 70, 229, 0.2)'
+                                            }}
+                                        >
+                                            👁️ {t("មើលលម្អិត", "View Details")}
+                                        </button>
+                                        <button
                                             onClick={() => {
                                                 setEditingId(null);
                                                 setSelectedClassIds([]);
                                                 setSubjectForm({ teacher_id: teacher.id, class_id: '', subject_id: '', academic_year: academicYears[0]?.name || '2026-2027' });
                                                 setIsSubjectModalOpen(true);
                                             }}
-                                            style={{ background: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe', padding: '0.35rem 0.6rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                            style={{
+                                                background: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe',
+                                                padding: '0.55rem 0.75rem', borderRadius: '8px', fontSize: '0.83rem',
+                                                fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap'
+                                            }}
                                         >
                                             + {t("ចាត់តាំង", "Assign")}
                                         </button>
-                                    </div>
-
-                                    {/* Homeroom Assignment Badges with Edit & Delete */}
-                                    {tHomes.length > 0 && (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                                            {tHomes.map(h => (
-                                                <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#dcfce7', padding: '0.4rem 0.65rem', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                                                    <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#15803d' }}>
-                                                        👑 {t("គ្រូបន្ទុក:", "Homeroom:")} ថ្នាក់ {h.school_class?.name}
-                                                    </span>
-                                                    <div style={{ display: 'flex', gap: '0.3rem' }}>
-                                                        <button 
-                                                            onClick={() => handleEditHomeroom(h)} 
-                                                            title={t("កែប្រែ", "Edit")}
-                                                            style={{ background: '#ffffff', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '4px', padding: '0.15rem 0.45rem', fontSize: '0.72rem', fontWeight: '700', cursor: 'pointer' }}
-                                                        >
-                                                            ✏️ {t("កែប្រែ", "Edit")}
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => handleDeleteHomeroom(h.id)} 
-                                                            title={t("លុប", "Delete")}
-                                                            style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '4px', padding: '0.15rem 0.45rem', fontSize: '0.72rem', fontWeight: '700', cursor: 'pointer' }}
-                                                        >
-                                                            🗑️
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* Subject Teaching Assignments with Edit & Delete */}
-                                    <div style={{ flex: 1 }}>
-                                        <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '0.4rem' }}>
-                                            📘 {t("មុខវិជ្ជា & ថ្នាក់បង្រៀន", "Teaching Subjects & Classes")}
-                                        </span>
-                                        {subjectGroups.length > 0 ? (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                {subjectGroups.map((grp, idx) => (
-                                                    <div key={idx} style={{ background: '#f8fafc', padding: '0.5rem 0.65rem', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                            <strong style={{ fontSize: '0.85rem', color: '#0369a1' }}>📘 {grp.name}</strong>
-                                                            {grp.classes.length > 0 && (
-                                                                <button
-                                                                    onClick={(e) => { e.stopPropagation(); handleEditSubject(grp.classes[0]); }}
-                                                                    title={t("កែប្រែមុងវិជ្ជានេះ", "Edit Subject")}
-                                                                    style={{
-                                                                        background: '#e0f2fe', color: '#0284c7', border: '1px solid #bae6fd',
-                                                                        borderRadius: '6px', padding: '0.15rem 0.45rem', fontSize: '0.72rem',
-                                                                        fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem'
-                                                                    }}
-                                                                >
-                                                                    ✏️ {t("កែប្រែមុខវិជ្ជា", "Edit Subject")}
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                                                            {grp.classes.map(c => (
-                                                                <div key={c.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', background: '#e0e7ff', color: '#3730a3', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '700', border: '1px solid #c7d2fe' }}>
-                                                                    <span>{c.school_class?.name}</span>
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); handleEditSubject(c); }}
-                                                                        title={t("កែប្រែ", "Edit")}
-                                                                        style={{ border: 'none', background: 'transparent', color: '#4338ca', cursor: 'pointer', padding: '0 1px', fontSize: '0.75rem' }}
-                                                                    >
-                                                                        ✏️
-                                                                    </button>
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); handleDeleteSubject(c.id); }}
-                                                                        title={t("លុប", "Delete")}
-                                                                        style={{ border: 'none', background: 'transparent', color: '#dc2626', cursor: 'pointer', padding: '0 1px', fontSize: '0.75rem' }}
-                                                                    >
-                                                                        ✖
-                                                                    </button>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <span style={{ fontStyle: 'italic', color: '#94a3b8', fontSize: '0.82rem' }}>{t("មិនទាន់ចាត់មុខវិជ្ជា", "No subject assignments yet")}</span>
-                                        )}
                                     </div>
                                 </div>
                             );
@@ -757,6 +738,10 @@ const TeacherAssignments = () => {
                 }
             >
                 <form onSubmit={handleHomeroomSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ background: '#f0f9ff', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #bae6fd', fontSize: '0.83rem', color: '#0369a1' }}>
+                        💡 {t("កំណត់ចំណាំ៖ គ្រូម្នាក់អាចចាត់តាំងជាគ្រូបន្ទុកថ្នាក់បានតែ ១ ថ្នាក់ប៉ុណ្ណោះ ក្នុងឆ្នាំសិក្សានីមួយៗ។", "Note: A teacher can only be assigned as homeroom teacher for 1 class per academic year.")}
+                    </div>
+
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', fontWeight: '600', color: '#334155' }}>
                             {t("ជ្រើសរើសគ្រូបង្រៀន", "Select Homeroom Teacher")} <span style={{ color: '#ef4444' }}>*</span>
@@ -768,9 +753,19 @@ const TeacherAssignments = () => {
                             style={{ width: '100%', height: '42px', padding: '0.6rem 0.8rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.9rem', color: '#0f172a' }}
                         >
                             <option value="">-- {t("ជ្រើសរើសគ្រូ", "Select Teacher")} --</option>
-                            {teachers.map(tItem => (
-                                <option key={tItem.id} value={tItem.id}>👑 {tItem.name}</option>
-                            ))}
+                            {teachers.map(tItem => {
+                                const existing = homerooms.find(h => String(h.teacher_id) === String(tItem.id) && String(h.id) !== String(editingId));
+                                return (
+                                    <option 
+                                        key={tItem.id} 
+                                        value={tItem.id}
+                                        disabled={Boolean(existing)}
+                                        style={{ color: existing ? '#94a3b8' : '#0f172a', backgroundColor: existing ? '#f1f5f9' : '#ffffff' }}
+                                    >
+                                        👑 {tItem.name} {existing ? `❌ (មានបន្ទុកថ្នាក់ ${existing.school_class?.name || ''} រួចហើយ)` : ''}
+                                    </option>
+                                );
+                            })}
                         </select>
                     </div>
 
@@ -785,9 +780,19 @@ const TeacherAssignments = () => {
                             style={{ width: '100%', height: '42px', padding: '0.6rem 0.8rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.9rem', color: '#0f172a' }}
                         >
                             <option value="">-- {t("ជ្រើសរើសថ្នាក់", "Select Class")} --</option>
-                            {classes.map(c => (
-                                <option key={c.id} value={c.id}>🏫 {c.name} ({c.grade_level})</option>
-                            ))}
+                            {classes.map(c => {
+                                const existing = homerooms.find(h => String(h.class_id) === String(c.id) && String(h.id) !== String(editingId));
+                                return (
+                                    <option 
+                                        key={c.id} 
+                                        value={c.id}
+                                        disabled={Boolean(existing)}
+                                        style={{ color: existing ? '#94a3b8' : '#0f172a', backgroundColor: existing ? '#f1f5f9' : '#ffffff' }}
+                                    >
+                                        🏫 {c.name} ({c.grade_level}) {existing ? `❌ (មានគ្រូបន្ទុកថ្នាក់ ${existing.teacher?.name || ''} រួចហើយ)` : ''}
+                                    </option>
+                                );
+                            })}
                         </select>
                     </div>
 
@@ -810,6 +815,162 @@ const TeacherAssignments = () => {
                         </select>
                     </div>
                 </form>
+            </Modal>
+
+            {/* View Teacher Assignment Details Modal */}
+            <Modal
+                isOpen={isViewModalOpen}
+                onClose={() => setIsViewModalOpen(false)}
+                title={(() => {
+                    const current = selectedTeacherForView ? teacherCardsData.find(c => c.teacher.id === selectedTeacherForView.teacher.id) || selectedTeacherForView : null;
+                    return current ? `👁️ ${t("ព័ត៌មានលម្អិតនៃការចាត់តាំង៖", "Assignment Details:")} ${current.teacher?.name}` : t("ព័ត៌មានលម្អិតនៃការចាត់តាំង", "Assignment Details");
+                })()}
+                footer={
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <Button 
+                                size="small" 
+                                variant="secondary"
+                                onClick={() => {
+                                    const current = selectedTeacherForView ? teacherCardsData.find(c => c.teacher.id === selectedTeacherForView.teacher.id) || selectedTeacherForView : null;
+                                    setEditingId(null);
+                                    setSelectedClassIds([]);
+                                    setSubjectForm({ teacher_id: current?.teacher?.id || '', class_id: '', subject_id: '', academic_year: academicYears[0]?.name || '2026-2027' });
+                                    setIsSubjectModalOpen(true);
+                                }}
+                            >
+                                + {t("ចាត់តាំងមុខវិជ្ជា", "Assign Subject")}
+                            </Button>
+                            <Button 
+                                size="small" 
+                                variant="secondary"
+                                onClick={() => {
+                                    const current = selectedTeacherForView ? teacherCardsData.find(c => c.teacher.id === selectedTeacherForView.teacher.id) || selectedTeacherForView : null;
+                                    setEditingId(null);
+                                    setHomeroomForm({ teacher_id: current?.teacher?.id || '', class_id: '', academic_year: academicYears[0]?.name || '2026-2027' });
+                                    setIsHomeroomModalOpen(true);
+                                }}
+                            >
+                                + {t("ចាត់តាំងគ្រូបន្ទុក", "Assign Homeroom")}
+                            </Button>
+                        </div>
+                        <Button onClick={() => setIsViewModalOpen(false)}>{t("បិទ", "Close")}</Button>
+                    </div>
+                }
+            >
+                {(() => {
+                    const current = selectedTeacherForView ? teacherCardsData.find(c => c.teacher.id === selectedTeacherForView.teacher.id) || selectedTeacherForView : null;
+                    if (!current) return null;
+                    return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            {/* Teacher Profile Summary Header */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                {getImageUrl(current.teacher.photo) ? (
+                                    <img src={getImageUrl(current.teacher.photo)} alt={current.teacher.name} style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #4f46e5' }} />
+                                ) : (
+                                    <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.4rem' }}>
+                                        {current.teacher.name?.charAt(0) || 'T'}
+                                    </div>
+                                )}
+                                <div>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>👨‍🏫 {current.teacher.name}</h3>
+                                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                                        📘 {current.teacher.specialization || 'General'}
+                                        {current.teacher.phone ? ` | 📞 ${current.teacher.phone}` : ''}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Homeroom Assignment Section */}
+                            <div style={{ background: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '1rem' }}>
+                                <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.92rem', color: '#15803d', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    👑 {t("គ្រូបន្ទុកថ្នាក់ (Homeroom Assignment)", "Homeroom Class Assignment")}
+                                </h4>
+                                {current.homerooms.length > 0 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        {current.homerooms.map(h => (
+                                            <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#dcfce7', padding: '0.6rem 0.85rem', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                                                <div>
+                                                    <strong style={{ fontSize: '0.92rem', color: '#15803d' }}>🏫 ថ្នាក់ {h.school_class?.name}</strong>
+                                                    <span style={{ fontSize: '0.8rem', color: '#166534', marginLeft: '0.5rem' }}>({h.academic_year})</span>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                                    <button
+                                                        onClick={() => handleEditHomeroom(h)}
+                                                        style={{ background: '#ffffff', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '0.25rem 0.6rem', fontSize: '0.78rem', fontWeight: '700', cursor: 'pointer' }}
+                                                    >
+                                                        ✏️ {t("កែប្រែ", "Edit")}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteHomeroom(h.id)}
+                                                        style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', padding: '0.25rem 0.6rem', fontSize: '0.78rem', fontWeight: '700', cursor: 'pointer' }}
+                                                    >
+                                                        🗑️ {t("លុប", "Delete")}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div style={{ color: '#94a3b8', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                                        {t("មិនទាន់មានការចាត់តាំងជាគ្រូបន្ទុកថ្នាក់នៅឡើយ", "No homeroom assignment for this teacher.")}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Teaching Subjects & Classes Section */}
+                            <div style={{ background: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '1rem' }}>
+                                <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.92rem', color: '#0284c7', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    📘 {t("មុខវិជ្ជា & ថ្នាក់បង្រៀន (Teaching Subjects & Classes)", "Teaching Subjects & Classes")}
+                                </h4>
+                                {current.subjectGroups.length > 0 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                        {current.subjectGroups.map((grp, idx) => (
+                                            <div key={idx} style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                                    <strong style={{ fontSize: '0.92rem', color: '#0369a1' }}>📘 {grp.name}</strong>
+                                                    {grp.classes.length > 0 && (
+                                                        <button
+                                                            onClick={() => handleEditSubject(grp.classes[0])}
+                                                            style={{ background: '#e0f2fe', color: '#0284c7', border: '1px solid #bae6fd', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                                                        >
+                                                            ✏️ {t("កែប្រែមុខវិជ្ជា", "Edit Subject")}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                                    {grp.classes.map(c => (
+                                                        <div key={c.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: '#e0e7ff', color: '#3730a3', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '700', border: '1px solid #c7d2fe' }}>
+                                                            <span>🏫 {c.school_class?.name}</span>
+                                                            <button
+                                                                onClick={() => handleEditSubject(c)}
+                                                                title={t("កែប្រែ", "Edit")}
+                                                                style={{ border: 'none', background: 'transparent', color: '#4338ca', cursor: 'pointer', padding: '0 2px', fontSize: '0.8rem' }}
+                                                            >
+                                                                ✏️
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteSubject(c.id)}
+                                                                title={t("លុប", "Delete")}
+                                                                style={{ border: 'none', background: 'transparent', color: '#dc2626', cursor: 'pointer', padding: '0 2px', fontSize: '0.8rem' }}
+                                                            >
+                                                                ✖
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div style={{ color: '#94a3b8', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                                        {t("មិនទាន់មានមុខវិជ្ជាចាត់តាំងបង្រៀននៅឡើយ", "No teaching subjects assigned for this teacher.")}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })()}
             </Modal>
         </div>
     );

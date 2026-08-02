@@ -40,6 +40,27 @@ const Classes = () => {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const [togglingClassId, setTogglingClassId] = useState(null);
+
+    const handleCopyClassRegisterLink = (cls) => {
+        const url = `${window.location.origin}/register/student?class_id=${cls.id}`;
+        navigator.clipboard.writeText(url);
+        toast.success(`បានចម្លង Link ចុះឈ្មោះសម្រាប់ថ្នាក់ ${cls.name} រួចរាល់!`);
+    };
+
+    const handleToggleRegistration = async (cls) => {
+        setTogglingClassId(cls.id);
+        try {
+            const res = await api.post(`/teacher/classes/${cls.id}/toggle-registration`);
+            toast.success(res.data.message);
+            fetchClasses();
+        } catch (err) {
+            toast.error(err.response?.data?.message || "មានបញ្ហាក្នុងការកំណត់ការចុះឈ្មោះ");
+        } finally {
+            setTogglingClassId(null);
+        }
+    };
+
     const fetchClasses = async () => {
         setLoading(true);
         setError(null);

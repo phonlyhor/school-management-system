@@ -44,6 +44,29 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\HomeworkController;
 
 
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+
+
+/*
+|--------------------------------------------------------------------------
+| CloadinaryTest
+|--------------------------------------------------------------------------
+*/
+Route::post('/upload-test', function (Request $request) {
+
+    $file = $request->file('image');
+
+    $uploadedFile = Cloudinary::upload(
+        $file->getRealPath(),
+        [
+            'folder' => 'school-management'
+        ]
+    );
+
+    return response()->json([
+        'url' => $uploadedFile->getSecurePath()
+    ]);
+});
 /*
 |--------------------------------------------------------------------------
 | Public Routes
@@ -64,6 +87,11 @@ Route::post('/register/student', [
 Route::get('/public/classes', [
     \App\Http\Controllers\AdminClassController::class,
     'index'
+]);
+
+Route::get('/public/settings', [
+    \App\Http\Controllers\SystemSettingController::class,
+    'getPublicSettings'
 ]);
 
 Route::get('/student/verify/{code}', [
@@ -406,6 +434,11 @@ Route::delete('/assessments/{assessment}',[
             'show'
         ]);
 
+        Route::post('/teacher/classes/{class_id}/toggle-registration', [
+            TeacherClassController::class,
+            'toggleRegistration'
+        ]);
+
 
 
         Route::post('/teacher/attendance/bulk', [
@@ -543,6 +576,21 @@ Route::delete('/assessments/{assessment}',[
     );
 
 
+
+    Route::get('/admin/system-settings', [
+        \App\Http\Controllers\SystemSettingController::class,
+        'index'
+    ]);
+
+    Route::post('/admin/system-settings', [
+        \App\Http\Controllers\SystemSettingController::class,
+        'update'
+    ]);
+
+    Route::post('/admin/system-settings/homeroom-registration', [
+        \App\Http\Controllers\SystemSettingController::class,
+        'updateHomeroomRegistrations'
+    ]);
 
     /*
     |--------------------------------------------------------------------------

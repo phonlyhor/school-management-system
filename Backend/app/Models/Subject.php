@@ -12,7 +12,8 @@ class Subject extends Model
         'name',
         'code',
         'description',
-        'max_score'
+        'max_score',
+        'stream'
     ];
     // Subject has many TeacherSubjectAssignments
     public function teacherAssignments()

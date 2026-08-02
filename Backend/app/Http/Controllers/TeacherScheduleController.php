@@ -53,7 +53,8 @@ class TeacherScheduleController extends Controller
                     'name' => $item->schoolClass?->name,
                     'grade_level' => $item->schoolClass?->grade_level,
                     'is_homeroom' => $isHr,
-                    'homeroom_teacher_name' => $hrTeacherObj ? $hrTeacherObj->name : null
+                    'homeroom_teacher_name' => $hrTeacherObj ? $hrTeacherObj->name : null,
+                    'is_registration_open' => (bool)($item->schoolClass?->is_registration_open ?? true),
                 ],
                 'teacher' => $item->teacher ? [
                     'id' => $item->teacher->id,
@@ -91,7 +92,8 @@ class TeacherScheduleController extends Controller
                         'name' => $ha->schoolClass->name,
                         'grade_level' => $ha->schoolClass->grade_level,
                         'is_homeroom' => true,
-                        'homeroom_teacher_name' => $ha->teacher?->name ?? $teacher->name
+                        'homeroom_teacher_name' => $ha->teacher?->name ?? $teacher->name,
+                        'is_registration_open' => (bool)($ha->schoolClass->is_registration_open ?? false)
                     ],
                     'teacher' => [
                         'id' => $teacher->id,
@@ -103,12 +105,15 @@ class TeacherScheduleController extends Controller
             }
         }
 
+        $allowGlobalRegistration = \App\Models\SystemSetting::get('allow_student_registration', 'true') === 'true';
+
         return response()->json([
             'teacher' => [
                 'id' => $teacher->id,
                 'name' => $teacher->name
             ],
-            'schedule' => $formatted
+            'schedule' => $formatted,
+            'allow_student_registration' => $allowGlobalRegistration
         ]);
     }
 
@@ -171,7 +176,8 @@ class TeacherScheduleController extends Controller
                     'name' => $item->schoolClass?->name,
                     'grade_level' => $item->schoolClass?->grade_level,
                     'is_homeroom' => true,
-                    'homeroom_teacher_name' => $hrTeacherObj ? $hrTeacherObj->name : null
+                    'homeroom_teacher_name' => $hrTeacherObj ? $hrTeacherObj->name : null,
+                    'is_registration_open' => (bool)($item->schoolClass?->is_registration_open ?? false),
                 ],
                 'teacher' => $item->teacher ? [
                     'id' => $item->teacher->id,
@@ -186,13 +192,29 @@ class TeacherScheduleController extends Controller
             ];
         }));
 
+        $targetClass = null;
+        if (!empty($homeroomClassIds)) {
+            $clsModel = \App\Models\SchoolClass::find($homeroomClassIds[0]);
+            if ($clsModel) {
+                $targetClass = [
+                    'id' => $clsModel->id,
+                    'name' => $clsModel->name,
+                    'grade_level' => $clsModel->grade_level,
+                    'is_homeroom' => true,
+                    'is_registration_open' => (bool)($clsModel->is_registration_open ?? false),
+                ];
+            }
+        }
+
         return response()->json([
             'teacher' => [
                 'id' => $teacher->id,
                 'name' => $teacher->name
             ],
+            'class' => $targetClass,
             'schedule' => $formatted,
-            'is_homeroom' => true
+            'is_homeroom' => true,
+            'allow_student_registration' => \App\Models\SystemSetting::get('allow_student_registration', 'true') === 'true'
         ]);
     }
 }
