@@ -46,10 +46,19 @@ class AdminTeacherController extends Controller
 
             $photoPath = null;
             if ($request->hasFile('photo')) {
-                $file = $request->file('photo');
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->storeAs('public/teachers', $filename);
-                $photoPath = 'storage/teachers/' . $filename;
+                try {
+                    $uploaded = \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::upload(
+                        $request->file('photo')->getRealPath(),
+                        ['folder' => 'school-management']
+                    );
+                    $photoPath = $uploaded->getSecurePath();
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Cloudinary Teacher Upload Fallback: " . $e->getMessage());
+                    $file = $request->file('photo');
+                    $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->storeAs('public/teachers', $filename);
+                    $photoPath = 'storage/teachers/' . $filename;
+                }
             } elseif ($request->filled('photo') && is_string($request->photo)) {
                 $photoPath = $request->photo;
             }
@@ -147,10 +156,19 @@ class AdminTeacherController extends Controller
             }
 
             if ($request->hasFile('photo')) {
-                $file = $request->file('photo');
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->storeAs('public/teachers', $filename);
-                $userData['photo'] = 'storage/teachers/' . $filename;
+                try {
+                    $uploaded = \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::upload(
+                        $request->file('photo')->getRealPath(),
+                        ['folder' => 'school-management']
+                    );
+                    $userData['photo'] = $uploaded->getSecurePath();
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Cloudinary Teacher Update Upload Fallback: " . $e->getMessage());
+                    $file = $request->file('photo');
+                    $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->storeAs('public/teachers', $filename);
+                    $userData['photo'] = 'storage/teachers/' . $filename;
+                }
             } elseif ($request->has('photo') && is_string($request->photo) && !empty($request->photo)) {
                 $userData['photo'] = $request->photo;
             }

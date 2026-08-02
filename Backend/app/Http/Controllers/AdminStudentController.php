@@ -67,10 +67,19 @@ class AdminStudentController extends Controller
 
             $photoPath = null;
             if ($request->hasFile('photo')) {
-                $file = $request->file('photo');
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->storeAs('public/students', $filename);
-                $photoPath = 'storage/students/' . $filename;
+                try {
+                    $uploaded = \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::upload(
+                        $request->file('photo')->getRealPath(),
+                        ['folder' => 'school-management']
+                    );
+                    $photoPath = $uploaded->getSecurePath();
+                } catch (\Throwable $e) {
+                    Log::warning("Cloudinary Upload Fallback to Local Storage: " . $e->getMessage());
+                    $file = $request->file('photo');
+                    $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->storeAs('public/students', $filename);
+                    $photoPath = 'storage/students/' . $filename;
+                }
             } elseif ($request->filled('photo') && is_string($request->photo)) {
                 $photoPath = $request->photo;
             }
@@ -202,10 +211,19 @@ class AdminStudentController extends Controller
             }
 
             if ($request->hasFile('photo')) {
-                $file = $request->file('photo');
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->storeAs('public/students', $filename);
-                $studentData['photo'] = 'storage/students/' . $filename;
+                try {
+                    $uploaded = \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::upload(
+                        $request->file('photo')->getRealPath(),
+                        ['folder' => 'school-management']
+                    );
+                    $studentData['photo'] = $uploaded->getSecurePath();
+                } catch (\Throwable $e) {
+                    Log::warning("Cloudinary Upload Fallback to Local Storage (Update): " . $e->getMessage());
+                    $file = $request->file('photo');
+                    $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->storeAs('public/students', $filename);
+                    $studentData['photo'] = 'storage/students/' . $filename;
+                }
             } elseif ($request->has('photo') && is_string($request->photo) && !empty($request->photo)) {
                 $studentData['photo'] = $request->photo;
             }
