@@ -52,6 +52,20 @@ use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 | CloadinaryTest
 |--------------------------------------------------------------------------
 */
+
+use Illuminate\Support\Facades\Artisan;
+
+Route::get('/seed-permission', function () {
+
+    Artisan::call('db:seed', [
+        '--class' => 'RolePermissionSeeder',
+        '--force' => true
+    ]);
+
+    return response()->json([
+        'message' => 'Role Permission seeded successfully'
+    ]);
+});
 Route::post('/upload-test', function (Request $request) {
 
     $file = $request->file('image');
