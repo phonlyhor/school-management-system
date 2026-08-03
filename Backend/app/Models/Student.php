@@ -95,4 +95,9 @@ class Student extends Model
     {
         return $this->hasOne(StudentParent::class);
     }
+
+    public function parents()
+    {
+        return $this->hasMany(StudentParent::class, 'student_id');
+    }
 }
