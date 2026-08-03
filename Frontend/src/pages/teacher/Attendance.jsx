@@ -106,12 +106,21 @@ const Attendance = () => {
         try {
             const res = await getClassStudents(selectedClass);
             const studentList = res.data.students || [];
+            const todayAtts = res.data.today_attendances || [];
+
+            const attMapByStudent = {};
+            todayAtts.forEach(att => {
+                if (att.student_id) {
+                    attMapByStudent[att.student_id] = att.status;
+                }
+            });
+
             setStudents(studentList);
             
-            // Initialize attendance data to 'present' for all students
+            // Initialize attendance data using saved attendance if available, else default to 'present'
             const initialData = {};
             studentList.forEach(s => {
-                initialData[s.id] = 'present';
+                initialData[s.id] = attMapByStudent[s.id] || 'present';
             });
             setAttendanceData(initialData);
 
@@ -322,36 +331,57 @@ const Attendance = () => {
                 <Card>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', marginBottom: '2rem', flexWrap: 'wrap' }}>
                         <div style={{ flex: '1', minWidth: '200px' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Class</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#0f172a' }}>ថ្នាក់រៀន (Class)</label>
                             <select 
                                 value={selectedClass} 
-                                onChange={(e) => { setSelectedClass(e.target.value); setSelectedSubject(''); }}
-                                style={{ width: '100%', padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                                onChange={(e) => { 
+                                    const newClassId = e.target.value;
+                                    setSelectedClass(newClassId);
+                                    
+                                    // Auto-select first subject for the selected class
+                                    const classIdInt = parseInt(newClassId);
+                                    const classSubjects = Array.from(new Map(
+                                        schedule
+                                            .filter(item => item.class.id === classIdInt)
+                                            .filter(item => item.subject && item.subject.id !== 0)
+                                            .map(item => [item.subject.id, item.subject])
+                                    ).values());
+                                    const isHR = schedule.some(item => item.class.id === classIdInt && item.class.is_homeroom);
+
+                                    if (!isHR && classSubjects.length > 0) {
+                                        setSelectedSubject(String(classSubjects[0].id));
+                                    } else if (isHR) {
+                                        setSelectedSubject('homeroom');
+                                    } else {
+                                        setSelectedSubject('');
+                                    }
+                                }}
+                                style={{ width: '100%', padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.9rem', color: '#0f172a' }}
                             >
-                                <option value="">-- Select Class --</option>
-                                {uniqueClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                <option value="">-- ជ្រើសរើសថ្នាក់រៀន (Select Class) --</option>
+                                {uniqueClasses.map(c => <option key={c.id} value={c.id}>ថ្នាក់ {c.name}</option>)}
                             </select>
                         </div>
 
                         <div style={{ flex: '1', minWidth: '200px' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Subject</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#0f172a' }}>មុខវិជ្ជា (Subject)</label>
                             <select 
                                 value={selectedSubject} 
                                 onChange={(e) => setSelectedSubject(e.target.value)}
                                 disabled={!selectedClass}
-                                style={{ width: '100%', padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '6px', opacity: !selectedClass ? 0.5 : 1 }}
+                                style={{ width: '100%', padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '6px', opacity: !selectedClass ? 0.5 : 1, fontSize: '0.9rem', color: '#0f172a' }}
                             >
-                                <option value="">-- Select Subject --</option>
+                                <option value="">-- ជ្រើសរើសមុខវិជ្ជា (Select Subject) --</option>
                                 {availableSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </select>
                         </div>
 
                         <div style={{ flex: '1', minWidth: '200px' }}>
-                            <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                            <Input label="កាលបរិច្ឆេទ (Date)" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
                         </div>
 
                         <Button onClick={handleLoadStudents} disabled={loading || !selectedClass || !selectedSubject}>
-                            {loading ? 'Loading...' : 'Load Students'}
+                            {loading ? 'កំពុងទាញយក...' : '📋 បង្ហាញបញ្ជីសិស្ស (Load Students)'}
                         </Button>
                     </div>
 

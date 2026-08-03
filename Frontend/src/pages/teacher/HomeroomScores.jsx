@@ -6,6 +6,7 @@ import Input from '../../components/common/Input';
 import Modal from '../../components/common/Modal';
 import { useLanguage } from '../../context/LanguageContext';
 import { getTeacherHomeroomSchedule, getClassStudents } from '../../services/teacherService';
+import { getClassSummaryReportCard } from '../../services/reportCardService';
 import { exportToCSV } from '../../utils/excelExporter';
 import toast from 'react-hot-toast';
 
@@ -17,6 +18,9 @@ const HomeroomScores = () => {
     const [subjectTeachers, setSubjectTeachers] = useState([]);
     const [search, setSearch] = useState('');
     const [selectedStudent, setSelectedStudent] = useState(null);
+    const [classSummaryData, setClassSummaryData] = useState(null);
+    const [isClassSummaryModalOpen, setIsClassSummaryModalOpen] = useState(false);
+    const [loadingSummary, setLoadingSummary] = useState(false);
 
     useEffect(() => {
         const fetchHomeroomData = async () => {
@@ -43,6 +47,21 @@ const HomeroomScores = () => {
         fetchHomeroomData();
     }, [lang]);
 
+    const handleViewClassSummary = async () => {
+        if (!homeroomClass?.id) return;
+        setLoadingSummary(true);
+        try {
+            const res = await getClassSummaryReportCard(homeroomClass.id);
+            setClassSummaryData(res.data || res);
+            setIsClassSummaryModalOpen(true);
+        } catch (err) {
+            console.error("Failed to load homeroom class summary:", err);
+            toast.error(t("មានបញ្ហាក្នុងការទាញយកតារាងចំណាត់ថ្នាក់", "Failed to load class ranking broadsheet."));
+        } finally {
+            setLoadingSummary(false);
+        }
+    };
+
     const filteredStudents = students.filter(st => {
         const query = search.toLowerCase();
         return !search || 
@@ -68,6 +87,38 @@ const HomeroomScores = () => {
         exportToCSV(`Homeroom_Scores_${className}_${new Date().toISOString().slice(0, 10)}.csv`, exportCols, students);
     };
 
+    const rankingColumns = [
+        { header: t('ចំណាត់ថ្នាក់ (Rank)', 'Rank'), render: (row) => <strong style={{ color: '#4f46e5', fontSize: '1.05rem' }}>#{row.rank}</strong> },
+        { header: t('អត្តលេខ', 'Code'), render: (row) => row.student_code || 'N/A' },
+        { header: t('ឈ្មោះសិស្ស', 'Student Name'), render: (row) => <strong>{row.student_name}</strong> },
+        { header: t('ពិន្ទុសរុប', 'Total Score'), render: (row) => row.total_score },
+        { header: t('មធ្យមភាគ %', 'Average %'), render: (row) => <strong>{row.average_percentage}%</strong> },
+        { header: t('ពិន្ទុលើ៥០', 'Score / 50'), render: (row) => row.score_out_of_50 },
+        { 
+            header: t('និទ្ទេស', 'Grade'), 
+            render: (row) => (
+                <span style={{ fontWeight: '700', color: row.grade_mention?.color }}>
+                    {row.grade_mention?.code} - {row.grade_mention?.khmer}
+                </span>
+            ) 
+        },
+        { 
+            header: t('លទ្ធផល', 'Result'), 
+            render: (row) => (
+                <span style={{ 
+                    fontWeight: '700', 
+                    color: row.pass_status?.is_passed ? '#16a34a' : '#dc2626',
+                    backgroundColor: row.pass_status?.is_passed ? '#dcfce7' : '#fee2e2',
+                    padding: '0.2rem 0.6rem',
+                    borderRadius: '6px',
+                    fontSize: '0.85rem'
+                }}>
+                    {row.pass_status?.label || 'N/A'}
+                </span>
+            ) 
+        }
+    ];
+
     if (loading) {
         return (
             <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
@@ -92,15 +143,24 @@ const HomeroomScores = () => {
             {/* Page Header */}
             <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                    <h1 className="page-title">{t(`👑 ពិន្ទុ និង គ្រូបង្រៀនថ្នាក់បន្ទុក (${homeroomClass.name})`, `Homeroom Scores & Subject Teachers (${homeroomClass.name})`)}</h1>
+                    <h1 className="page-title">{t(`👑 ពិន្ទុ និង ចំណាត់ថ្នាក់ថ្នាក់បន្ទុក (${homeroomClass.name})`, `Homeroom Scores & Ranks (${homeroomClass.name})`)}</h1>
                     <p style={{ color: '#64748b', marginTop: '0.25rem', fontSize: '0.95rem' }}>
-                        {t("ពិនិត្យមើលបញ្ជីកូនសិស្សក្នុងថ្នាក់បន្ទុក រៀនជាមួយគ្រូណាខ្លះ និង ពិន្ទុទទួលបានតាមមុខវិជ្ជានីមួយៗ។", "View homeroom student roster, subject teachers assigned, and student score details.")}
+                        {t("ពិនិត្យមើលបញ្ជីកូនសិស្សក្នុងថ្នាក់បន្ទុក ចំណាត់ថ្នាក់តាមស្ដង់ដារក្រសួង និង ពិន្ទុតាមមុខវិជ្ជា។", "Inspect homeroom student roster, MoEYS class broadsheet ranking, and subject scores.")}
                     </p>
                 </div>
 
-                <Button variant="secondary" onClick={handleExportExcel} disabled={students.length === 0}>
-                    📥 {t("ទាញយក Excel", "Export Excel")}
-                </Button>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <Button 
+                        variant="primary" 
+                        onClick={handleViewClassSummary}
+                        style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+                    >
+                        📊 {t("មើលតារាងចំណាត់ថ្នាក់ (Broadsheet)", "View Class Broadsheet Ranking")}
+                    </Button>
+                    <Button variant="secondary" onClick={handleExportExcel} disabled={students.length === 0}>
+                        📥 {t("ទាញយក Excel", "Export Excel")}
+                    </Button>
+                </div>
             </div>
 
             {/* Subject Teachers Card Summary */}
@@ -284,6 +344,43 @@ const HomeroomScores = () => {
                             </div>
                         )}
                     </div>
+                )}
+            </Modal>
+
+            {/* Class Broadsheet Summary Ranking Modal */}
+            <Modal
+                isOpen={isClassSummaryModalOpen}
+                onClose={() => setIsClassSummaryModalOpen(false)}
+                title={t("តារាងចំណាត់ថ្នាក់សិស្សប្រចាំថ្នាក់ (MoEYS Class Broadsheet)", "Class Ranking Summary Broadsheet")}
+                maxWidth="900px"
+                footer={
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                        <Button variant="secondary" onClick={() => setIsClassSummaryModalOpen(false)}>{t("បិទ", "Close")}</Button>
+                        <Button variant="primary" onClick={() => window.print()} style={{ backgroundColor: '#16a34a', borderColor: '#16a34a' }}>
+                            🖨️ {t("បោះពុម្ពតារាងចំណាត់ថ្នាក់", "Print Ranking Sheet")}
+                        </Button>
+                    </div>
+                }
+            >
+                {classSummaryData ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+                            <div>
+                                <h3 style={{ margin: 0 }}>ថ្នាក់ ៖ {classSummaryData.class?.name}</h3>
+                                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                                    សិស្សសរុប ៖ {classSummaryData.summary?.total_students} នាក់ | ជាប់ ៖ {classSummaryData.summary?.passed_count} នាក់ | ធ្លាក់ ៖ {classSummaryData.summary?.failed_count} នាក់
+                                </span>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#64748b', display: 'block' }}>មធ្យមភាគថ្នាក់</span>
+                                <strong style={{ fontSize: '1.2rem', color: '#4f46e5' }}>{classSummaryData.summary?.class_average}%</strong>
+                            </div>
+                        </div>
+
+                        <Table columns={rankingColumns} data={classSummaryData.rankings || []} />
+                    </div>
+                ) : (
+                    <p style={{ padding: '1rem' }}>{t("កំពុងរៀបចំទិន្នន័យ...", "Loading class ranking summary...")}</p>
                 )}
             </Modal>
         </div>

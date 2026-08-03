@@ -549,6 +549,7 @@ Route::delete('/assessments/{assessment}',[
         ]);
 
     Route::get('/report-card/{student_id}', [ReportCardController::class, 'show']);
+    Route::get('/report-cards/class/{class_id}', [ReportCardController::class, 'classSummaryReport']);
     Route::get(
         '/attendance/report/student/{student_id}',
         [

@@ -47,6 +47,7 @@ import TeacherScores from "../pages/teacher/Scores";
 import TeacherSchedule from "../pages/teacher/Schedule";
 import HomeroomSchedule from "../pages/teacher/HomeroomSchedule";
 import HomeroomScores from "../pages/teacher/HomeroomScores";
+import HomeroomRoster from "../pages/teacher/HomeroomRoster";
 import TeacherProfile from "../pages/teacher/Profile";
 
 // Student
@@ -125,6 +126,7 @@ const AppRoutes = () => {
                 <Route path="schedule" element={<TeacherSchedule />} />
                 <Route path="homeroom-schedule" element={<HomeroomSchedule />} />
                 <Route path="homeroom-scores" element={<HomeroomScores />} />
+                <Route path="homeroom-roster" element={<HomeroomRoster />} />
                 <Route path="leave-requests" element={<LeaveRequests />} />
                 <Route path="announcements" element={<Announcements />} />
                 <Route path="homework" element={<HomeworkPage />} />

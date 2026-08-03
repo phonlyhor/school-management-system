@@ -56,44 +56,50 @@ class AttendanceController extends Controller
 
         $isHomeroomAttempt = (empty($subjectId) || $subjectId == '0' || $subjectId == 'homeroom');
 
+        $isHomeroom = \App\Models\TeacherClassAssignment::where('teacher_id', $user->id)
+            ->where('class_id', $request->class_id)
+            ->exists();
+
         if ($isHomeroomAttempt) {
-            $hrSubject = \App\Models\Subject::firstOrCreate(
-                ['code' => 'HR-ATTENDANCE'],
-                ['name' => 'វត្តមានប្រចាំថ្ងៃ (Homeroom Daily Attendance)', 'description' => 'Homeroom Daily Attendance']
-            );
-            $subjectId = $hrSubject->id;
-        }
-
-        if ($user->role_id != 1) {
-            $isHomeroom = \App\Models\TeacherClassAssignment::where('teacher_id', $user->id)
-                ->where('class_id', $request->class_id)
-                ->exists();
-
-            if ($isHomeroomAttempt && !$isHomeroom) {
-                return response()->json([
-                    'message' => 'លោកគ្រូ/អ្នកគ្រូ មិនមែនជាគ្រូបន្ទុកថ្នាក់សម្រាប់ថ្នាក់នេះទេ មិនអាចស្រង់វត្តមានប្រចាំថ្ងៃ (Homeroom Attendance) បានឡើយ!'
-                ], 403);
-            }
-
-            if (!$isHomeroom) {
-                $allowed = \App\Models\TeacherSubjectAssignment::where('teacher_id', $user->id)
+            if ($isHomeroom || $user->role_id == 1) {
+                $hrSubject = \App\Models\Subject::firstOrCreate(
+                    ['code' => 'HR-ATTENDANCE'],
+                    ['name' => 'វត្តមានប្រចាំថ្ងៃ (Homeroom Daily Attendance)', 'description' => 'Homeroom Daily Attendance']
+                );
+                $subjectId = $hrSubject->id;
+            } else {
+                // If not homeroom teacher, find the subject this teacher teaches in this class
+                $assignedSub = \App\Models\TeacherSubjectAssignment::where('teacher_id', $user->id)
                     ->where('class_id', $request->class_id)
-                    ->exists();
+                    ->first();
 
-                if (!$allowed) {
-                    $allowed = \App\Models\Schedule::where('class_id', $request->class_id)
+                if (!$assignedSub) {
+                    $sched = \App\Models\Schedule::where('class_id', $request->class_id)
                         ->where(function($q) use ($user) {
                             $q->where('teacher_id', $user->id)
                               ->orWhere('secondary_teacher_id', $user->id);
                         })
-                        ->exists();
-
-                    if (!$allowed) {
-                        return response()->json([
-                            'message' => 'លោកគ្រូ/អ្នកគ្រូ គ្មានសិទ្ធិស្រង់វត្តមានសម្រាប់ថ្នាក់នេះឡើយ!'
-                        ], 403);
+                        ->first();
+                    if ($sched) {
+                        $subjectId = $sched->subject_id;
                     }
+                } else {
+                    $subjectId = $assignedSub->subject_id;
                 }
+
+                // If still empty, grab any valid subject for this class or fallback to first subject
+                if (empty($subjectId)) {
+                    $firstSub = \App\Models\Subject::first();
+                    $subjectId = $firstSub ? $firstSub->id : 1;
+                }
+            }
+        } else if (!is_numeric($subjectId)) {
+            $subModel = \App\Models\Subject::where('code', $subjectId)->first();
+            if ($subModel) {
+                $subjectId = $subModel->id;
+            } else {
+                $firstSub = \App\Models\Subject::first();
+                $subjectId = $firstSub ? $firstSub->id : 1;
             }
         }
 
@@ -145,47 +151,51 @@ class AttendanceController extends Controller
 
         $teacher = $request->user();
         $subjectId = $request->subject_id;
-
         $isHomeroomAttempt = (empty($subjectId) || $subjectId == '0' || $subjectId == 'homeroom');
 
+        $isHomeroom = \App\Models\TeacherClassAssignment::where('teacher_id', $teacher->id)
+            ->where('class_id', $request->class_id)
+            ->exists();
+
         if ($isHomeroomAttempt) {
-            $hrSubject = \App\Models\Subject::firstOrCreate(
-                ['code' => 'HR-ATTENDANCE'],
-                ['name' => 'វត្តមានប្រចាំថ្ងៃ (Homeroom Daily Attendance)', 'description' => 'Homeroom Daily Attendance']
-            );
-            $subjectId = $hrSubject->id;
-        }
-
-        if ($teacher->role_id != 1) {
-            $isHomeroom = \App\Models\TeacherClassAssignment::where('teacher_id', $teacher->id)
-                ->where('class_id', $request->class_id)
-                ->exists();
-
-            if ($isHomeroomAttempt && !$isHomeroom) {
-                return response()->json([
-                    'message' => 'លោកគ្រូ/អ្នកគ្រូ មិនមែនជាគ្រូបន្ទុកថ្នាក់សម្រាប់ថ្នាក់នេះទេ មិនអាចស្រង់វត្តមានប្រចាំថ្ងៃ (Homeroom Attendance) បានឡើយ!'
-                ], 403);
-            }
-
-            if (!$isHomeroom) {
-                $allowed = \App\Models\TeacherSubjectAssignment::where('teacher_id', $teacher->id)
+            if ($isHomeroom) {
+                $hrSubject = \App\Models\Subject::firstOrCreate(
+                    ['code' => 'HR-ATTENDANCE'],
+                    ['name' => 'វត្តមានប្រចាំថ្ងៃ (Homeroom Daily Attendance)', 'description' => 'Homeroom Daily Attendance']
+                );
+                $subjectId = $hrSubject->id;
+            } else {
+                // If not homeroom teacher, find the subject this teacher teaches in this class
+                $assignedSub = \App\Models\TeacherSubjectAssignment::where('teacher_id', $teacher->id)
                     ->where('class_id', $request->class_id)
-                    ->exists();
+                    ->first();
 
-                if (!$allowed) {
-                    $allowed = \App\Models\Schedule::where('class_id', $request->class_id)
+                if (!$assignedSub) {
+                    $sched = \App\Models\Schedule::where('class_id', $request->class_id)
                         ->where(function($q) use ($teacher) {
                             $q->where('teacher_id', $teacher->id)
                               ->orWhere('secondary_teacher_id', $teacher->id);
                         })
-                        ->exists();
-
-                    if (!$allowed) {
-                        return response()->json([
-                            'message' => 'លោកគ្រូ/អ្នកគ្រូ គ្មានសិទ្ធិស្រង់វត្តមានសម្រាប់ថ្នាក់នេះឡើយ!'
-                        ], 403);
+                        ->first();
+                    if ($sched) {
+                        $subjectId = $sched->subject_id;
                     }
+                } else {
+                    $subjectId = $assignedSub->subject_id;
                 }
+
+                if (empty($subjectId)) {
+                    $firstSub = \App\Models\Subject::first();
+                    $subjectId = $firstSub ? $firstSub->id : 1;
+                }
+            }
+        } else if (!is_numeric($subjectId)) {
+            $subModel = \App\Models\Subject::where('code', $subjectId)->first();
+            if ($subModel) {
+                $subjectId = $subModel->id;
+            } else {
+                $firstSub = \App\Models\Subject::first();
+                $subjectId = $firstSub ? $firstSub->id : 1;
             }
         }
 

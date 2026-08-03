@@ -109,6 +109,24 @@ const MyClasses = () => {
     const [todayAttendances, setTodayAttendances] = useState([]);
     const [subjectTeachers, setSubjectTeachers] = useState([]);
     const [selectedStudentScores, setSelectedStudentScores] = useState(null);
+    const [activeModalTab, setActiveModalTab] = useState('roster'); // 'roster' | 'teachers' | 'attendances'
+    const [selectedTeacherFilter, setSelectedTeacherFilter] = useState('all');
+    const [historyDateFilter, setHistoryDateFilter] = useState(new Date().toISOString().split('T')[0]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+
+    const handleFetchHistoryForDate = async (dateVal, classId = selectedClass?.id) => {
+        setHistoryDateFilter(dateVal);
+        if (!classId) return;
+        setLoadingHistory(true);
+        try {
+            const res = await getClassStudents(classId, dateVal);
+            setTodayAttendances(res.data.today_attendances || []);
+        } catch (err) {
+            console.error("Failed to load attendance logs for date:", err);
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
 
     const [togglingClassId, setTogglingClassId] = useState(null);
 
@@ -134,9 +152,13 @@ const MyClasses = () => {
 
     const handleViewStudents = async (cls) => {
         setSelectedClass(cls);
+        setActiveModalTab('roster');
+        const todayStr = new Date().toISOString().split('T')[0];
+        setHistoryDateFilter(todayStr);
+        setSelectedTeacherFilter('all');
         setLoadingStudents(true);
         try {
-            const res = await getClassStudents(cls.id);
+            const res = await getClassStudents(cls.id, todayStr);
             setStudents(res.data.students || []);
             setIsHomeroom(res.data.is_homeroom || false);
             setTodayAttendances(res.data.today_attendances || []);
@@ -163,14 +185,40 @@ const MyClasses = () => {
         }
     };
 
+    const [attendanceSubjectId, setAttendanceSubjectId] = useState('homeroom');
+
     const handleOpenAttendanceModal = async (cls) => {
         setAttendanceClass(cls);
+        
+        // Find subject taught by this teacher in this class
+        if (cls.is_homeroom) {
+            setAttendanceSubjectId('homeroom');
+        } else {
+            const taughtSubject = schedule.find(s => s.class?.id === cls.id && s.subject?.id);
+            if (taughtSubject && taughtSubject.subject) {
+                setAttendanceSubjectId(String(taughtSubject.subject.id));
+            } else {
+                setAttendanceSubjectId('');
+            }
+        }
+
         try {
             const res = await getClassStudents(cls.id);
             const stList = res.data.students || [];
+            const todayAtts = res.data.today_attendances || [];
+
+            const attMapByStudent = {};
+            todayAtts.forEach(att => {
+                if (att.student_id) {
+                    attMapByStudent[att.student_id] = att.status;
+                }
+            });
+
             setAttendanceList(stList);
             const initState = {};
-            stList.forEach(s => { initState[s.id] = 'present'; });
+            stList.forEach(s => { 
+                initState[s.id] = attMapByStudent[s.id] || 'present'; 
+            });
             setAttendanceState(initState);
         } catch (err) {
             console.error("Failed to load students for attendance:", err);
@@ -180,11 +228,18 @@ const MyClasses = () => {
 
     const handleSaveQuickAttendance = async () => {
         if (!attendanceClass || attendanceList.length === 0) return;
+        
+        const targetSubjectId = attendanceSubjectId || (attendanceClass.is_homeroom ? 'homeroom' : '');
+        if (!targetSubjectId) {
+            toast.error("សូមជ្រើសរើស «មុខវិជ្ជា» ដែលត្រូវស្រង់វត្តមានជាមុនសិន!");
+            return;
+        }
+
         setSavingAttendance(true);
         try {
             await bulkStoreAttendance({
                 class_id: attendanceClass.id,
-                subject_id: 'homeroom',
+                subject_id: targetSubjectId,
                 date: attendanceDate,
                 students: Object.keys(attendanceState).map(stId => ({
                     student_id: stId,
@@ -393,11 +448,6 @@ const MyClasses = () => {
                                     <Button size="small" variant="secondary" onClick={() => handleOpenAttendanceModal(cls)}>
                                         📝 ស្រង់វត្តមាន
                                     </Button>
-                                    {cls.is_homeroom && (
-                                        <Button size="small" variant="secondary" onClick={() => handleOpenReportModal(cls)} style={{ backgroundColor: '#fff7ed', color: '#c2410c', borderColor: '#ffedd5' }}>
-                                            📊 របាយការណ៍
-                                        </Button>
-                                    )}
                                     <Button size="small" onClick={() => handleViewStudents(cls)}>
                                         {cls.is_homeroom ? '👑 គ្រប់គ្រងថ្នាក់ & តួនាទី' : '👥 មើលបញ្ជីឈ្មោះសិស្ស'}
                                     </Button>
@@ -477,15 +527,38 @@ const MyClasses = () => {
             >
                 {attendanceClass && (
                     <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', background: '#f0fdf4', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #bbf7d0', flexWrap: 'wrap', gap: '0.5rem' }}>
-                            <div>
-                                <strong style={{ color: '#15803d', fontSize: '0.95rem' }}>📅 កាលបរិច្ឆេទស្រង់វត្តមាន ៖</strong>
-                                <input 
-                                    type="date"
-                                    value={attendanceDate}
-                                    onChange={(e) => setAttendanceDate(e.target.value)}
-                                    style={{ marginLeft: '0.5rem', padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600' }}
-                                />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', background: '#f0fdf4', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #bbf7d0', flexWrap: 'wrap', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                <div>
+                                    <strong style={{ color: '#15803d', fontSize: '0.9rem' }}>📅 កាលបរិច្ឆេទ ៖</strong>
+                                    <input 
+                                        type="date"
+                                        value={attendanceDate}
+                                        onChange={(e) => setAttendanceDate(e.target.value)}
+                                        style={{ marginLeft: '0.3rem', padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600' }}
+                                    />
+                                </div>
+                                <div>
+                                    <strong style={{ color: '#15803d', fontSize: '0.9rem', marginLeft: '0.5rem' }}>📘 មុខវិជ្ជា ៖</strong>
+                                    <select
+                                        value={attendanceSubjectId}
+                                        onChange={(e) => setAttendanceSubjectId(e.target.value)}
+                                        style={{ marginLeft: '0.3rem', padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '700', color: '#0f172a' }}
+                                    >
+                                        {attendanceClass.is_homeroom && (
+                                            <option value="homeroom">👑 វត្តមានប្រចាំថ្ងៃ (Homeroom)</option>
+                                        )}
+                                        {Array.from(new Map(
+                                            schedule
+                                                .filter(s => s.class?.id === attendanceClass.id && s.subject?.id)
+                                                .map(s => [s.subject.id, s.subject])
+                                        ).values()).map(sub => (
+                                            <option key={sub.id} value={String(sub.id)}>
+                                                📘 {sub.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
                             <div style={{ display: 'flex', gap: '0.4rem' }}>
                                 <Button size="small" variant="secondary" onClick={() => {
@@ -595,76 +668,96 @@ const MyClasses = () => {
                     </div>
                 }
             >
-                <div style={{ marginBottom: '1rem', color: '#475569', fontSize: '0.9rem', background: isHomeroom ? '#f8fafc' : '#f0f9ff', padding: '0.75rem', borderRadius: '8px', border: isHomeroom ? '1px solid #e2e8f0' : '1px solid #bae6fd' }}>
-                    {isHomeroom ? (
-                        <span>💡 <strong>Homeroom Teacher Portal (គ្រប់គ្រងថ្នាក់បន្ទុក) ៖</strong> អ្នកអាចចាត់តាំងប្រធានថ្នាក់/អនុប្រធានថ្នាក់, ចុច <strong>📊 មើលពិន្ទុ & គ្រូបង្រៀន</strong> ដើម្បិមើលពិន្ទុ និង គ្រូបង្រៀនតាមមុខវិជ្ជា ព្រមទាំងចុច <strong>👁️ ព័ត៌មានសិស្ស</strong> ដើម្បិមើលព័ត៌មានលម្អិត។</span>
-                    ) : (
-                        <span>📘 <strong>Subject Teacher View (មើលបញ្ជីឈ្មោះសិស្ស):</strong> អ្នកអាចមើលបញ្ជីឈ្មោះសិស្សក្នុងថ្នាក់បាន។ (តួនាទីចាត់តាំងប្រធានថ្នាក់ មានសម្រាប់តែ <strong>គ្រូបន្ទុកថ្នាក់ / Homeroom Teacher</strong> ប៉ុណ្ណោះ)</span>
+                {/* Clean Tab Navigation Bar inside Modal */}
+                <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '2px solid #e2e8f0', marginBottom: '1.2rem', paddingBottom: '0.2rem', flexWrap: 'wrap' }}>
+                    <button
+                        type="button"
+                        onClick={() => setActiveModalTab('roster')}
+                        style={{
+                            padding: '0.55rem 1rem',
+                            borderRadius: '8px',
+                            border: 'none',
+                            fontWeight: '700',
+                            fontSize: '0.88rem',
+                            cursor: 'pointer',
+                            backgroundColor: activeModalTab === 'roster' ? '#4f46e5' : '#f1f5f9',
+                            color: activeModalTab === 'roster' ? '#ffffff' : '#475569',
+                            boxShadow: activeModalTab === 'roster' ? '0 2px 4px rgba(79,70,229,0.2)' : 'none'
+                        }}
+                    >
+                        👥 បញ្ជីឈ្មោះសិស្ស ({students.length})
+                    </button>
+
+                    {isHomeroom && subjectTeachers.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setActiveModalTab('teachers')}
+                            style={{
+                                padding: '0.55rem 1rem',
+                                borderRadius: '8px',
+                                border: 'none',
+                                fontWeight: '700',
+                                fontSize: '0.88rem',
+                                cursor: 'pointer',
+                                backgroundColor: activeModalTab === 'teachers' ? '#0284c7' : '#f1f5f9',
+                                color: activeModalTab === 'teachers' ? '#ffffff' : '#475569',
+                                boxShadow: activeModalTab === 'teachers' ? '0 2px 4px rgba(2,132,199,0.2)' : 'none'
+                            }}
+                        >
+                            👨‍🏫 គ្រូបង្រៀនតាមមុខវិជ្ជា ({subjectTeachers.length})
+                        </button>
                     )}
                 </div>
 
-                {/* Subject Teachers Banner for Homeroom Teacher */}
-                {isHomeroom && subjectTeachers.length > 0 && (
-                    <div style={{ background: '#f0f9ff', padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid #bae6fd', marginBottom: '1rem' }}>
-                        <strong style={{ color: '#0369a1', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
-                            👨‍🏫 បញ្ជីគ្រូបង្រៀនតាមមុខវិជ្ជាក្នុងថ្នាក់បន្ទុកនេះ (Subject Teachers of Class {selectedClass?.name}) ៖
-                        </strong>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '0.5rem' }}>
-                            {subjectTeachers.map(st => (
-                                <div key={st.subject_id} style={{ background: '#ffffff', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #e0f2fe', fontSize: '0.82rem' }}>
-                                    <div style={{ fontWeight: '700', color: '#0284c7' }}>📘 {st.subject_name} ({st.subject_code})</div>
-                                    <div style={{ color: '#334155', fontWeight: '700', marginTop: '2px' }}>
-                                        👨‍🏫 {st.teacher_name}
-                                    </div>
-                                    {st.study_times && st.study_times.length > 0 && (
-                                        <div style={{ color: '#059669', fontSize: '0.78rem', fontWeight: '700', marginTop: '4px', background: '#ecfdf5', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid #a7f3d0' }}>
-                                            ⏰ ម៉ោងសិក្សា ៖ {st.study_times.join(', ')}
+                {activeModalTab === 'roster' && (
+                    <div>
+                        <div style={{ marginBottom: '1rem', color: '#475569', fontSize: '0.85rem', background: isHomeroom ? '#f8fafc' : '#f0f9ff', padding: '0.65rem 0.85rem', borderRadius: '8px', border: isHomeroom ? '1px solid #e2e8f0' : '1px solid #bae6fd' }}>
+                            {isHomeroom ? (
+                                <span>💡 <strong>Homeroom Teacher Portal ៖</strong> អ្នកអាចចាត់តាំងប្រធានថ្នាក់/អនុប្រធានថ្នាក់, ចុច <strong>📊 មើលពិន្ទុ & គ្រូបង្រៀន</strong> ដើម្បីមើលពិន្ទុ និង គ្រូបង្រៀនតាមមុខវិជ្ជា ព្រមទាំងចុច <strong>👁️ ព័ត៌មានសិស្ស</strong> ដើម្បីមើលព័ត៌មានលម្អិត។</span>
+                            ) : (
+                                <span>📘 <strong>Subject Teacher View ៖</strong> អ្នកអាចមើលបញ្ជីឈ្មោះសិស្សក្នុងថ្នាក់បាន។ (តួនាទីចាត់តាំងប្រធានថ្នាក់ មានសម្រាប់តែ <strong>គ្រូបន្ទុកថ្នាក់ / Homeroom Teacher</strong> ប៉ុណ្ណោះ)</span>
+                            )}
+                        </div>
+
+                        {loadingStudents ? (
+                            <p style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Loading student list...</p>
+                        ) : students.length === 0 ? (
+                            <p style={{ color: '#64748b', fontStyle: 'italic', textAlign: 'center', padding: '2rem' }}>No students enrolled in this class.</p>
+                        ) : (
+                            <Table 
+                                columns={studentColumns} 
+                                data={[...students].sort((a, b) => {
+                                    const rank = { 'Class Monitor': 1, 'Vice Monitor': 2, 'Treasurer': 3, 'Secretary': 4, 'Member': 5 };
+                                    return (rank[a.class_position] || 99) - (rank[b.class_position] || 99);
+                                })} 
+                            />
+                        )}
+                    </div>
+                )}
+
+                {activeModalTab === 'teachers' && isHomeroom && (
+                    <div>
+                        <div style={{ background: '#f0f9ff', padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid #bae6fd', marginBottom: '1rem' }}>
+                            <strong style={{ color: '#0369a1', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                                👨‍🏫 បញ្ជីគ្រូបង្រៀនតាមមុខវិជ្ជាក្នុងថ្នាក់បន្ទុកនេះ (Subject Teachers of Class {selectedClass?.name}) ៖
+                            </strong>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.75rem' }}>
+                                {subjectTeachers.map(st => (
+                                    <div key={st.subject_id} style={{ background: '#ffffff', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e0f2fe', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                                        <div style={{ fontWeight: '700', color: '#0284c7', fontSize: '0.92rem' }}>📘 {st.subject_name} ({st.subject_code})</div>
+                                        <div style={{ color: '#334155', fontWeight: '700', marginTop: '4px', fontSize: '0.88rem' }}>
+                                            👨‍🏫 លោកគ្រូ/អ្នកគ្រូ ៖ <strong>{st.teacher_name}</strong>
                                         </div>
-                                    )}
-                                </div>
-                            ))}
+                                        {st.study_times && st.study_times.length > 0 && (
+                                            <div style={{ color: '#059669', fontSize: '0.8rem', fontWeight: '700', marginTop: '6px', background: '#ecfdf5', padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #a7f3d0' }}>
+                                                ⏰ ម៉ោងសិក្សា ៖ {st.study_times.join(', ')}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
-                )}
-
-                {todayAttendances.length > 0 && (
-                    <div style={{ background: '#fff7ed', padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid #fed7aa', marginBottom: '1rem' }}>
-                        <strong style={{ color: '#c2410c', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
-                            ⚠️ របាយការណ៍វត្តមានថ្ងៃនេះ ស្រង់ដោយគ្រូមុខវិជ្ជា (Today's Attendance Logs by Subject Teachers) ៖
-                        </strong>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                            {todayAttendances.map(att => (
-                                <div key={att.id} style={{ fontSize: '0.84rem', color: '#7c2d12', display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#ffffff', padding: '0.4rem 0.75rem', borderRadius: '6px', border: '1px solid #ffedd5', flexWrap: 'wrap' }}>
-                                    <strong>{att.student?.user?.name || 'សិស្ស'}</strong>
-                                    <span style={{
-                                        padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: '700', fontSize: '0.78rem',
-                                        backgroundColor: att.status === 'absent' ? '#ef4444' : att.status === 'late' ? '#eab308' : att.status === 'permission' ? '#3b82f6' : '#22c55e',
-                                        color: '#ffffff'
-                                    }}>
-                                        {att.status === 'absent' ? '❌ អវត្តមាន (Absent)' : att.status === 'late' ? '⏰ មកយឺត (Late)' : att.status === 'permission' ? '📝 សុំច្បាប់ (Permission)' : '✅ វត្តមាន (Present)'}
-                                    </span>
-                                    <span>| មុខវិជ្ជា ៖ <strong>{att.subject?.name || 'វត្តមានប្រចាំថ្ងៃ'}</strong></span>
-                                    <span style={{ marginLeft: 'auto', color: '#9a3412', fontStyle: 'italic', fontSize: '0.8rem' }}>
-                                        👨‍🏫 ស្រង់ដោយលោកគ្រូ/អ្នកគ្រូ ៖ <strong>{att.teacher?.name || 'N/A'}</strong>
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {loadingStudents ? (
-                    <p>Loading student list...</p>
-                ) : students.length === 0 ? (
-                    <p style={{ color: '#64748b', fontStyle: 'italic' }}>No students enrolled in this class.</p>
-                ) : (
-                    <Table 
-                        columns={studentColumns} 
-                        data={[...students].sort((a, b) => {
-                            const rank = { 'Class Monitor': 1, 'Vice Monitor': 2, 'Treasurer': 3, 'Secretary': 4, 'Member': 5 };
-                            return (rank[a.class_position] || 99) - (rank[b.class_position] || 99);
-                        })} 
-                    />
                 )}
             </Modal>
 

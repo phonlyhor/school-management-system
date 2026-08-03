@@ -13,8 +13,9 @@ export const getTeacherClasses = async () => {
     return await api.get('/teacher/classes');
 };
 
-export const getTeacherClassStudents = async (classId) => {
-    return await api.get(`/teacher/classes/${classId}/students`);
+export const getTeacherClassStudents = async (classId, date = '') => {
+    const config = date ? { params: { date } } : {};
+    return await api.get(`/teacher/classes/${classId}/students`, config);
 };
 
 export const getClassStudents = getTeacherClassStudents;

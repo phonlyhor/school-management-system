@@ -5,6 +5,8 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Modal from '../../components/common/Modal';
 import StudentIdCardModal from '../../components/admin/StudentIdCardModal';
+import MeritCertificateModal from '../../components/common/MeritCertificateModal';
+import StudyCertificateModal from '../../components/common/StudyCertificateModal';
 import { useLanguage } from '../../context/LanguageContext';
 import { getStudents, createStudent, updateStudent, deleteStudent } from '../../services/studentService';
 import { getClasses } from '../../services/classService';
@@ -25,6 +27,8 @@ const Students = () => {
     const [editingId, setEditingId] = useState(null);
     const [viewingStudent, setViewingStudent] = useState(null);
     const [printingStudent, setPrintingStudent] = useState(null);
+    const [meritStudent, setMeritStudent] = useState(null);
+    const [studyCertStudent, setStudyCertStudent] = useState(null);
 
     const [photoFile, setPhotoFile] = useState(null);
     const [photoPreview, setPhotoPreview] = useState(null);
@@ -376,7 +380,7 @@ const Students = () => {
         { 
             header: t('សកម្មភាព', 'Actions'), 
             render: (row) => (
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                     <Button 
                         size="small" 
                         variant="secondary" 
@@ -393,6 +397,24 @@ const Students = () => {
                         style={{ backgroundColor: '#e0e7ff', color: '#3730a3', fontWeight: '700' }}
                     >
                         🖨️ ID
+                    </Button>
+                    <Button 
+                        size="small" 
+                        variant="secondary" 
+                        onClick={(e) => { e.stopPropagation(); setMeritStudent(row); }}
+                        title={t("បោះពុម្ពប័ណ្ណសរសើរ", "Print Merit Certificate")}
+                        style={{ backgroundColor: '#fef3c7', color: '#92400e', fontWeight: '700' }}
+                    >
+                        🎖️
+                    </Button>
+                    <Button 
+                        size="small" 
+                        variant="secondary" 
+                        onClick={(e) => { e.stopPropagation(); setStudyCertStudent(row); }}
+                        title={t("បោះពុម្ពលិខិតបញ្ជាក់ការសិក្សា", "Print Study Certificate")}
+                        style={{ backgroundColor: '#f1f5f9', color: '#0f172a', fontWeight: '700' }}
+                    >
+                        📄
                     </Button>
                     <Button size="small" variant="secondary" onClick={(e) => { e.stopPropagation(); handleEditClick(row); }}>{t('កែប្រែ', 'Edit')}</Button>
                     <Button size="small" variant="danger" onClick={(e) => { e.stopPropagation(); handleDelete(row.id); }}>{t('លុប', 'Delete')}</Button>
@@ -993,6 +1015,24 @@ const Students = () => {
                     isOpen={!!printingStudent}
                     onClose={() => setPrintingStudent(null)}
                     student={printingStudent}
+                />
+            )}
+
+            {/* Print Merit Certificate Modal */}
+            {meritStudent && (
+                <MeritCertificateModal
+                    isOpen={!!meritStudent}
+                    onClose={() => setMeritStudent(null)}
+                    student={meritStudent}
+                />
+            )}
+
+            {/* Print Study Enrollment Certificate Modal */}
+            {studyCertStudent && (
+                <StudyCertificateModal
+                    isOpen={!!studyCertStudent}
+                    onClose={() => setStudyCertStudent(null)}
+                    student={studyCertStudent}
                 />
             )}
         </div>

@@ -60,10 +60,10 @@ class TeacherStudentController extends Controller
             ->where('class_id', $class_id)
             ->exists();
 
-        $today = date('Y-m-d');
+        $targetDate = $request->query('date', date('Y-m-d'));
         $todayAttendances = \App\Models\Attendance::with(['teacher', 'subject', 'student.user'])
             ->where('class_id', $class_id)
-            ->whereDate('date', $today)
+            ->whereDate('date', $targetDate)
             ->get();
 
         $hrAssignment = \App\Models\TeacherClassAssignment::with('teacher')

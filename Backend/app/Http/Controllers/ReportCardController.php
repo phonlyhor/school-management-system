@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\StudentScore;
-
+use App\Models\SchoolClass;
+use App\Services\MoEYSCalculationService;
 
 class ReportCardController extends Controller
 {
-
-
-    public function show(\Illuminate\Http\Request $request, $student_id)
+    /**
+     * Display student academic report card (MoEYS Standard)
+     */
+    public function show(Request $request, $student_id)
     {
         // Get Student (by Student ID or User ID)
         $student = Student::with([
@@ -34,6 +37,7 @@ class ReportCardController extends Controller
         }
 
         $academicYear = $request->query('academic_year');
+        $semesterId = $request->query('semester_id');
 
         // Get Scores
         $scoresQuery = StudentScore::with([
@@ -43,337 +47,115 @@ class ReportCardController extends Controller
         ->where('student_id', $student->id);
 
         if ($academicYear) {
-            $scoresQuery->whereHas('assessment.semester.academicYear', function($q) use ($academicYear) {
+            $scoresQuery->whereHas('assessment.semester.academicYear', function ($q) use ($academicYear) {
                 $q->where('name', $academicYear);
+            });
+        }
+
+        if ($semesterId) {
+            $scoresQuery->whereHas('assessment', function ($q) use ($semesterId) {
+                $q->where('semester_id', $semesterId);
             });
         }
 
         $scores = $scoresQuery->get();
 
-        // Calculate Average & School Passing Logic
-        $average = 0;
-        $scoreOn50 = 0;
-        $finalScore50 = 0;
-        $isPassed = false;
-        $resultStatus = 'N/A';
+        // MoEYS Summary Calculation
+        $summary = MoEYSCalculationService::calculateScoreSummary($scores);
 
-        if ($scores->count() > 0) {
-            $average = round($scores->avg('percentage'), 2);
-            $scoreOn50 = round($average / 2, 2); // Score out of 50
-            $finalScore50 = (int)round($scoreOn50); // 24.5 rounds UP to 25 (PASS), 24.4 stays 24 (FAIL)
-            $isPassed = $finalScore50 >= 25;
-            $resultStatus = $isPassed ? 'ជាប់ (PASS)' : 'ធ្លាក់ (FAIL)';
+        // Class Ranking Calculation
+        $rankData = MoEYSCalculationService::calculateClassRanking(
+            $student->class_id,
+            $academicYear,
+            $semesterId
+        );
+
+        $studentRank = null;
+        if (!empty($rankData['rankings'])) {
+            foreach ($rankData['rankings'] as $item) {
+                if ($item['student_id'] == $student->id) {
+                    $studentRank = $item['rank'];
+                    break;
+                }
+            }
         }
 
-        // Calculate Grade
-        $grade = $this->calculateGrade(
-            $average
-        );
-
-        // Calculate Rank
-        $rankData = $this->calculateRank(
-            $student->id,
-            $student->class_id
-        );
-
-
-
-
+        $academicYearName = $scores->first()?->assessment?->semester?->academicYear?->name ?? $academicYear ?? '2025-2026';
+        $semesterName = $scores->first()?->assessment?->semester?->name ?? 'N/A';
 
         return response()->json([
-
-            "student"=>[
-
-                "id"=>$student->id,
-
-                "name"=>$student->user?->name ?? 'Unknown Student',
-
-                "student_code"=>$student->student_code ?? '',
-
-                "class"=>[
-
-                    "name"=>$student->schoolClass?->name ?? 'Unassigned',
-
-                    "grade_level"=>$student->schoolClass?->grade_level ?? 'N/A'
-
+            'student' => [
+                'id' => $student->id,
+                'name' => $student->user?->name ?? 'Unknown Student',
+                'student_code' => $student->student_code ?? '',
+                'gender' => $student->gender ?? 'N/A',
+                'class' => [
+                    'id' => $student->schoolClass?->id,
+                    'name' => $student->schoolClass?->name ?? 'Unassigned',
+                    'grade_level' => $student->schoolClass?->grade_level ?? 'N/A'
                 ]
-
             ],
-
-
-
-
-
-            "academic_year" =>
-
-                $scores->first()
-                ?->assessment
-                ?->semester
-                ?->academicYear
-                ?->name,
-
-
-
-
-
-
-            "semester" =>
-
-                $scores->first()
-                ?->assessment
-                ?->semester
-                ?->name,
-
-
-
-
-
-
-
-            "subjects"=>$scores->map(function($score){
-
-
-                return [
-
-                    "subject"=>$score->subject?->name ?? 'N/A',
-
-                    "score"=>$score->score,
-
-                    "max_score"=>$score->max_score,
-
-                    "percentage"=>$score->percentage,
-
-                    "grade"=>$score->grade
-
-                ];
-
-
-            }),
-
-
-
-
-
-
-
-            "average" => $average,
-            "score_out_of_50" => $scoreOn50,
-            "final_score_50" => $finalScore50,
-            "is_passed" => $isPassed,
-            "result_status" => $resultStatus,
-            "pass_threshold" => 25.00,
-            "overall_grade" => $grade,
-            "rank" => $rankData['rank'] ?? null,
-            "total_students" => $rankData['total_students'] ?? 0
-
-
-
+            'academic_year' => $academicYearName,
+            'semester' => $semesterName,
+            'subjects' => $summary['subjects'],
+            'total_score' => $summary['total_score'],
+            'total_max_score' => $summary['total_max_score'],
+            'average' => $summary['average_percentage'],
+            'score_out_of_50' => $summary['score_out_of_50'],
+            'score_out_of_10' => $summary['score_out_of_10'],
+            'final_score_50' => (int)round($summary['score_out_of_50']),
+            'is_passed' => $summary['pass_status']['is_passed'],
+            'result_status' => $summary['pass_status']['label'],
+            'pass_status' => $summary['pass_status'],
+            'pass_threshold' => 25.00,
+            'grade_mention' => $summary['grade_mention'],
+            'overall_grade' => $summary['grade_mention']['code'],
+            'rank' => $studentRank,
+            'total_students' => $rankData['total_students']
         ]);
-
     }
 
-
-
-
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Calculate Grade
-    |--------------------------------------------------------------------------
-    */
-
-
-    private function calculateGrade($percentage)
+    /**
+     * Get MoEYS Class Broadsheet / Ranking Summary for a whole class
+     */
+    public function classSummaryReport(Request $request, $class_id)
     {
-
-
-        if($percentage >= 90)
-        {
-            return "A";
+        $schoolClass = SchoolClass::find($class_id);
+        if (!$schoolClass) {
+            return response()->json([
+                'message' => 'School class not found.'
+            ], 404);
         }
 
+        $academicYear = $request->query('academic_year');
+        $semesterId = $request->query('semester_id');
 
+        $rankData = MoEYSCalculationService::calculateClassRanking($class_id, $academicYear, $semesterId);
 
-        if($percentage >= 80)
-        {
-            return "B";
-        }
+        $rankings = $rankData['rankings'];
+        $totalStudents = $rankData['total_students'];
+        $passedCount = count(array_filter($rankings, fn($r) => $r['pass_status']['is_passed']));
+        $failedCount = $totalStudents - $passedCount;
 
+        $classAverage = $totalStudents > 0
+            ? round(array_sum(array_column($rankings, 'average_percentage')) / $totalStudents, 2)
+            : 0;
 
-
-        if($percentage >= 70)
-        {
-            return "C";
-        }
-
-
-
-        if($percentage >= 60)
-        {
-            return "D";
-        }
-
-
-
-        return "F";
-
-
+        return response()->json([
+            'class' => [
+                'id' => $schoolClass->id,
+                'name' => $schoolClass->name,
+                'grade_level' => $schoolClass->grade_level
+            ],
+            'academic_year' => $academicYear ?? 'All',
+            'summary' => [
+                'total_students' => $totalStudents,
+                'passed_count' => $passedCount,
+                'failed_count' => $failedCount,
+                'pass_rate' => $totalStudents > 0 ? round(($passedCount / $totalStudents) * 100, 2) . '%' : '0%',
+                'class_average' => $classAverage
+            ],
+            'rankings' => $rankings
+        ]);
     }
-
-
-
-
-
-
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Calculate Rank
-    |--------------------------------------------------------------------------
-    */
-
-
-    private function calculateRank($student_id, $class_id)
-    {
-        if (!$class_id) {
-            return [
-                "rank" => null,
-                "total_students" => 0
-            ];
-        }
-
-        // Get all students in same class
-
-        $students = Student::where(
-            'class_id',
-            $class_id
-        )
-        ->get();
-
-
-
-
-        $ranking = [];
-
-
-
-
-
-        foreach($students as $student)
-        {
-
-
-            $scores = StudentScore::where(
-                'student_id',
-                $student->id
-            )
-            ->get();
-
-
-
-
-
-            $average = 0;
-
-
-
-            if($scores->count() > 0)
-            {
-
-                $average = $scores->avg(
-                    'percentage'
-                );
-
-            }
-
-
-
-
-
-            $ranking[]=[
-
-
-                "student_id"=>$student->id,
-
-
-                "average"=>$average
-
-
-            ];
-
-
-
-        }
-
-
-
-
-
-
-
-
-        // Sort highest average first
-
-        usort($ranking,function($a,$b){
-
-
-            return $b['average'] <=> $a['average'];
-
-
-        });
-
-
-
-
-
-
-
-        // Find student rank
-
-        $rank = 1;
-
-
-
-        foreach($ranking as $item)
-        {
-
-
-            if($item['student_id'] == $student_id)
-            {
-
-                return [
-
-                    "rank"=>$rank,
-
-                    "total_students"=>count($ranking)
-
-                ];
-
-            }
-
-
-
-            $rank++;
-
-
-        }
-
-        return [
-
-            "rank"=>null, 
-
-            "total_students"=>count($ranking)
-
-        ];
-
-
-
-    }
-
-
-
 }

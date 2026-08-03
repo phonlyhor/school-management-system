@@ -3,13 +3,14 @@ import Sidebar from '../components/layout/Sidebar';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 
-import { FiHome, FiBookOpen, FiCalendar, FiEdit3, FiClock, FiUser, FiBell, FiPaperclip, FiAward } from 'react-icons/fi';
+import { FiHome, FiBookOpen, FiCalendar, FiEdit3, FiClock, FiUser, FiBell, FiPaperclip, FiAward, FiUsers } from 'react-icons/fi';
 
 const menuItems = [
     { label: 'Dashboard', path: '/teacher/dashboard', icon: <FiHome /> },
     { label: 'Announcements', path: '/teacher/announcements', icon: <FiBell /> },
     { label: 'My Classes', path: '/teacher/classes', icon: <FiBookOpen /> },
-    { label: 'Homeroom Scores (ពិន្ទុថ្នាក់បន្ទុក)', path: '/teacher/homeroom-scores', icon: <FiAward /> },
+    { label: 'បញ្ជីសិស្ស & វត្តមានថ្នាក់បន្ទុក', path: '/teacher/homeroom-roster', icon: <FiUsers /> },
+    { label: 'ពិន្ទុថ្នាក់បន្ទុក', path: '/teacher/homeroom-scores', icon: <FiAward /> },
     { label: 'Attendance', path: '/teacher/attendance', icon: <FiCalendar /> },
     { label: 'Homework', path: '/teacher/homework', icon: <FiPaperclip /> },
     { label: 'Scores', path: '/teacher/scores', icon: <FiEdit3 /> },
