@@ -124,7 +124,16 @@ Route::post('/public/forgot-password-request', function (\Illuminate\Http\Reques
 | Protected Routes
 |--------------------------------------------------------------------------
 */
+use Illuminate\Support\Facades\Artisan;
+Route::get('/seed-database', function () {
+    Artisan::call('db:seed', [
+        '--force' => true
+    ]);
 
+    return response()->json([
+        'message' => 'Database seeded successfully'
+    ]);
+});
 
 Route::middleware('auth:sanctum')->group(function () {
 
