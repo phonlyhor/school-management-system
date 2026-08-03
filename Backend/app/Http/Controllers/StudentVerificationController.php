@@ -11,15 +11,23 @@ class StudentVerificationController extends Controller
     public function verify($code)
     {
         try {
-            $student = Student::with([
+            $query = Student::with([
                 'user',
                 'schoolClass.teacherAssignments.teacher',
                 'studentParent.user',
                 'parents.user'
-            ])
-            ->where('student_code', $code)
-            ->orWhere('id', $code)
-            ->first();
+            ]);
+
+            if (is_numeric($code)) {
+                $query->where(function ($q) use ($code) {
+                    $q->where('id', (int)$code)
+                      ->orWhere('student_code', (string)$code);
+                });
+            } else {
+                $query->where('student_code', (string)$code);
+            }
+
+            $student = $query->first();
 
             if (!$student) {
                 return response()->json([
