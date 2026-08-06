@@ -99,7 +99,7 @@ class StudentVerificationController extends Controller
     public function verifyTeacher($code)
     {
         try {
-            $query = \App\Models\Teacher::with(['user', 'teacherAssignments.schoolClass']);
+            $query = \App\Models\Teacher::with(['user', 'schoolClass', 'teacherAssignments.schoolClass']);
 
             $cleanCode = (string)$code;
             $numericId = null;
@@ -126,9 +126,18 @@ class StudentVerificationController extends Controller
                 ], 404);
             }
 
-            $classes = $teacher->teacherAssignments ? $teacher->teacherAssignments->map(function($a) {
-                return $a->schoolClass?->name;
-            })->filter()->unique()->values() : [];
+            $classes = collect([]);
+            if ($teacher->schoolClass) {
+                $classes->push($teacher->schoolClass->name);
+            }
+            if ($teacher->teacherAssignments) {
+                foreach ($teacher->teacherAssignments as $assignment) {
+                    if ($assignment->schoolClass) {
+                        $classes->push($assignment->schoolClass->name);
+                    }
+                }
+            }
+            $classList = $classes->filter()->unique()->values()->toArray();
 
             return response()->json([
                 'success' => true,
@@ -151,7 +160,7 @@ class StudentVerificationController extends Controller
                     'specialization_1' => $teacher->specialization_1 ?? $teacher->specialization ?? 'N/A',
                     'specialization_2' => $teacher->specialization_2 ?? 'N/A',
                     'degree_level' => $teacher->degree_level ?? 'បរិញ្ញាបត្រ',
-                    'assigned_classes' => $classes
+                    'assigned_classes' => $classList
                 ]
             ]);
         } catch (\Exception $e) {

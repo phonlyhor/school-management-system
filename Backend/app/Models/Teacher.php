@@ -45,4 +45,12 @@ class Teacher extends Model
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
     }
+
+    /**
+     * Get all subject/class teaching assignments for the teacher.
+     */
+    public function teacherAssignments()
+    {
+        return $this->hasMany(TeacherAssignment::class, 'teacher_id', 'user_id');
+    }
 }
