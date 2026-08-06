@@ -101,18 +101,20 @@ class StudentVerificationController extends Controller
         try {
             $query = \App\Models\Teacher::with(['user', 'teacherAssignments.schoolClass']);
 
-            if (is_numeric($code)) {
-                $query->where(function ($q) use ($code) {
-                    $q->where('id', (int)$code)
-                      ->orWhere('civil_servant_id', (string)$code)
-                      ->orWhere('teacher_code', (string)$code);
-                });
-            } else {
-                $query->where(function ($q) use ($code) {
-                    $q->where('civil_servant_id', (string)$code)
-                      ->orWhere('teacher_code', (string)$code);
-                });
+            $cleanCode = (string)$code;
+            $numericId = null;
+            if (preg_match('/^TCH-(\d+)$/i', $cleanCode, $matches)) {
+                $numericId = (int)$matches[1];
+            } elseif (is_numeric($cleanCode)) {
+                $numericId = (int)$cleanCode;
             }
+
+            $query->where(function ($q) use ($cleanCode, $numericId) {
+                $q->where('civil_servant_id', $cleanCode);
+                if ($numericId !== null) {
+                    $q->orWhere('id', $numericId);
+                }
+            });
 
             $teacher = $query->first();
 
