@@ -67,6 +67,7 @@ import ParentProfile from "../pages/parent/Profile";
 
 // Public Verification & Registration
 import StudentVerification from "../pages/public/StudentVerification";
+import TeacherVerification from "../pages/public/TeacherVerification";
 import StudentRegister from "../pages/public/StudentRegister";
 
 const AppRoutes = () => {
@@ -78,6 +79,7 @@ const AppRoutes = () => {
             <Route path="/register/student" element={<StudentRegister />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/student/verify/:code" element={<StudentVerification />} />
+            <Route path="/teacher/verify/:code" element={<TeacherVerification />} />
 
             {/* Admin Routes */}
             <Route path="/admin" element={

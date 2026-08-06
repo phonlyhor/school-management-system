@@ -95,4 +95,70 @@ class StudentVerificationController extends Controller
             ], 500);
         }
     }
+
+    public function verifyTeacher($code)
+    {
+        try {
+            $query = \App\Models\Teacher::with(['user', 'teacherAssignments.schoolClass']);
+
+            if (is_numeric($code)) {
+                $query->where(function ($q) use ($code) {
+                    $q->where('id', (int)$code)
+                      ->orWhere('civil_servant_id', (string)$code)
+                      ->orWhere('teacher_code', (string)$code);
+                });
+            } else {
+                $query->where(function ($q) use ($code) {
+                    $q->where('civil_servant_id', (string)$code)
+                      ->orWhere('teacher_code', (string)$code);
+                });
+            }
+
+            $teacher = $query->first();
+
+            if (!$teacher) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'រកមិនឃើញទិន្នន័យគ្រូបង្រៀនដែលមានអត្តលេខនេះឡើយ (Teacher record not found)',
+                    'teacher' => null
+                ], 404);
+            }
+
+            $classes = $teacher->teacherAssignments ? $teacher->teacherAssignments->map(function($a) {
+                return $a->schoolClass?->name;
+            })->filter()->unique()->values() : [];
+
+            return response()->json([
+                'success' => true,
+                'verification_status' => 'VERIFIED_OFFICIAL_TEACHER',
+                'school' => [
+                    'name_kh' => 'វិទ្យាល័យ ហ៊ុន សែន ចំការលើ',
+                    'name_en' => 'HUN SEN CHAMKAR LOE HIGH SCHOOL',
+                    'code' => 'HS-CL-2026'
+                ],
+                'teacher' => [
+                    'id' => $teacher->id,
+                    'civil_servant_id' => $teacher->civil_servant_id ?? ('TCH-' . str_pad($teacher->id, 4, '0', STR_PAD_LEFT)),
+                    'name' => $teacher->user?->name ?? 'N/A',
+                    'email' => $teacher->user?->email ?? 'N/A',
+                    'gender' => $teacher->gender ?? 'N/A',
+                    'photo' => $teacher->photo,
+                    'phone' => $teacher->phone ?? 'N/A',
+                    'position' => $teacher->position ?? 'គ្រូបង្រៀន (Teacher)',
+                    'civil_service_framework' => $teacher->civil_service_framework ?? 'គ្រូបង្រៀនកម្រិតខ្ពស់',
+                    'specialization_1' => $teacher->specialization_1 ?? $teacher->specialization ?? 'N/A',
+                    'specialization_2' => $teacher->specialization_2 ?? 'N/A',
+                    'degree_level' => $teacher->degree_level ?? 'បរិញ្ញាបត្រ',
+                    'assigned_classes' => $classes
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Teacher Verification Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'មានបញ្ហាបច្ចេកទេសលើ Server (Server Error: ' . $e->getMessage() . ')',
+                'teacher' => null
+            ], 500);
+        }
+    }
 }

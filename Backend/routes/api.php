@@ -104,6 +104,11 @@ Route::get('/student/verify/{code}', [
     'verify'
 ]);
 
+Route::get('/teacher/verify/{code}', [
+    \App\Http\Controllers\StudentVerificationController::class,
+    'verifyTeacher'
+]);
+
 Route::post('/public/forgot-password-request', function (\Illuminate\Http\Request $request) {
     $request->validate(['email' => 'required|email']);
     
