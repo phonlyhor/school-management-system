@@ -18,6 +18,8 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'first_name',
+        'last_name',
         'email',
         'gender',
         'password',
@@ -26,8 +28,20 @@ class User extends Authenticatable
         'date_of_birth',
         'specialization',
         'address',
+        'province',
+        'district',
+        'commune',
+        'village',
         'phone',
     ];
+
+    /**
+     * User has one teacher profile
+     */
+    public function teacher()
+    {
+        return $this->hasOne(Teacher::class);
+    }
     //User have many roles
    public function role()
 {

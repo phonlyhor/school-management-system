@@ -82,13 +82,12 @@ function Login() {
                 {/* School Header Badge */}
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'white' }}>
                     <div style={{
-                        width: '68px', height: '68px', borderRadius: '20px', background: 'rgba(255, 255, 255, 0.12)',
-                        backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        width: '78px', height: '78px', borderRadius: '50%', background: '#ffffff',
+                        padding: '4px',
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                         marginBottom: '0.85rem', boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)'
                     }}>
-                        <MdOutlineSchool size={40} color="#ffffff" />
+                        <img src="/school-logo.png" alt="School Logo" style={{ width: '70px', height: '70px', objectFit: 'contain' }} />
                     </div>
                     <h1 style={{ margin: 0, fontSize: '1.45rem', fontWeight: '800', letterSpacing: '0.02em', color: '#ffffff' }}>
                         វិទ្យាល័យ ហ៊ុន សែន ចំការលើ

@@ -27,7 +27,17 @@ class Student extends Model
         'mother_phone',
         'place_of_birth',
         'class_position',
-        'max_leave_days',
+        'height_cm',
+        'weight_kg',
+        'orphan_status',
+        'equity_card_type',
+        'equity_card_number',
+        'scholarship_type',
+        'insurance_card_number',
+        'student_phone',
+        'father_occupation',
+        'mother_occupation',
+        'family_monthly_income',
     ];
 
     protected $appends = ['age', 'father_age', 'mother_age', 'photo_url'];
