@@ -42,6 +42,9 @@ use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\HomeworkController;
+use App\Http\Controllers\LocationController;
+
+Route::get('/locations/cambodia', [LocationController::class, 'index']);
 
 
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
@@ -52,6 +55,8 @@ use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 | CloadinaryTest
 |--------------------------------------------------------------------------
 */
+
+
 Route::post('/upload-test', function (Request $request) {
 
     $file = $request->file('image');

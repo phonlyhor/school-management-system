@@ -8,6 +8,7 @@ import { getParents, createParent, updateParent, deleteParent } from '../../serv
 import { getStudents } from '../../services/studentService';
 import { getClasses } from '../../services/classService';
 import { exportToCSV } from '../../utils/excelExporter';
+import CambodianAddressSelector from '../../components/common/CambodianAddressSelector';
 import toast from 'react-hot-toast';
 
 const Parents = () => {
@@ -19,6 +20,8 @@ const Parents = () => {
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [search, setSearch] = useState('');
+    const [provinceFilter, setProvinceFilter] = useState('');
+    const [districtFilter, setDistrictFilter] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [editingId, setEditingId] = useState(null);
@@ -64,10 +67,22 @@ const Parents = () => {
     };
 
     const handleInputChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
+        const { name, value } = e.target;
+        if (name === 'first_name' || name === 'last_name') {
+            const fn = name === 'first_name' ? value : (formData.first_name || '');
+            const ln = name === 'last_name' ? value : (formData.last_name || '');
+            const computedName = `${fn} ${ln}`.trim();
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                name: computedName
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
     };
 
     const handleToggleStudent = (studentId) => {
@@ -140,8 +155,15 @@ const Parents = () => {
         setEditingId(row.id);
         setSelectedClassId('');
         setStudentSearch('');
+        const fullName = row.user?.name || '';
+        const nameParts = fullName.trim().split(' ');
+        const fn = row.user?.first_name || (nameParts.length > 1 ? nameParts[0] : fullName);
+        const ln = row.user?.last_name || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
+
         setFormData({
-            name: row.user?.name || '',
+            name: fullName,
+            first_name: fn,
+            last_name: ln,
             email: row.user?.email || '',
             password: '', 
             student_ids: row.student_ids || (row.students ? row.students.map(s => s.id) : []),
@@ -213,10 +235,18 @@ const Parents = () => {
         }
     ];
 
-    const filteredParents = parents.filter(p => 
-        (p.user?.name && p.user.name.toLowerCase().includes(search.toLowerCase())) || 
-        (p.students && p.students.some(s => s.user?.name?.toLowerCase().includes(search.toLowerCase())))
-    );
+    const filteredParents = parents.filter(p => {
+        const matchesSearch = !search || 
+            (p.user?.name && p.user.name.toLowerCase().includes(search.toLowerCase())) || 
+            (p.students && p.students.some(s => s.user?.name?.toLowerCase().includes(search.toLowerCase()))) ||
+            (p.phone && p.phone.includes(search));
+
+        const matchesProvince = !provinceFilter || (p.user?.province || p.user?.address || p.address || '').includes(provinceFilter);
+
+        const matchesDistrict = !districtFilter || (p.user?.district || p.user?.address || p.address || '').includes(districtFilter);
+
+        return matchesSearch && matchesProvince && matchesDistrict;
+    });
 
     const availableStudents = students.filter(s => {
         const matchClass = selectedClassId ? String(s.class_id) === String(selectedClassId) : true;
@@ -272,12 +302,49 @@ const Parents = () => {
                     <p style={{ color: '#64748b', fontSize: '0.95rem', margin: '0 0 1rem 0' }}>
                         Enroll parents and link them to their children (supports multiple children selection).
                     </p>
-                    <div style={{ width: '300px' }}>
-                        <Input 
-                            placeholder="Search by parent or child name..." 
-                            value={search}
-                            onChange={handleSearch}
-                        />
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <div style={{ width: '280px' }}>
+                            <Input 
+                                placeholder="Search by parent, child name, or phone..." 
+                                value={search}
+                                onChange={handleSearch}
+                                style={{ margin: 0 }}
+                            />
+                        </div>
+
+                        {/* Select Province Dropdown Filter */}
+                        <div style={{ minWidth: '180px' }}>
+                            <select 
+                                value={provinceFilter} 
+                                onChange={(e) => setProvinceFilter(e.target.value)}
+                                style={{ width: '100%', height: '42px', padding: '0.6rem 0.8rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.9rem', color: '#0f172a', fontWeight: '500' }}
+                            >
+                                <option value="">🏙️ All Provinces (ខេត្តទាំងអស់)</option>
+                                {Array.from(new Set(parents.map(p => p.user?.province || (p.address ? p.address.split(',').pop().trim() : '')).filter(Boolean))).map(prov => (
+                                    <option key={prov} value={prov}>{prov}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Select District Dropdown Filter */}
+                        <div style={{ minWidth: '180px' }}>
+                            <select 
+                                value={districtFilter} 
+                                onChange={(e) => setDistrictFilter(e.target.value)}
+                                style={{ width: '100%', height: '42px', padding: '0.6rem 0.8rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.9rem', color: '#0f172a', fontWeight: '500' }}
+                            >
+                                <option value="">🏛️ All Districts (ស្រុកទាំងអស់)</option>
+                                {Array.from(new Set(parents.map(p => p.user?.district || '').filter(Boolean))).map(dist => (
+                                    <option key={dist} value={dist}>{dist}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {(search || provinceFilter || districtFilter) && (
+                            <Button size="small" variant="secondary" onClick={() => { setSearch(''); setProvinceFilter(''); setDistrictFilter(''); }}>
+                                Clear Search ✖️
+                            </Button>
+                        )}
                     </div>
                 </div>
                 
@@ -311,12 +378,20 @@ const Parents = () => {
                         </h4>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <Input 
-                                label="Full Name (ឈ្មោះពេញ)" 
-                                name="name"
-                                value={formData.name}
+                                label={<span>គោត្តនាម (First Name) <span style={{ color: '#ef4444' }}>*</span></span>} 
+                                name="first_name"
+                                value={formData.first_name || ''}
                                 onChange={handleInputChange}
                                 required
-                                placeholder="e.g. Sok Dara"
+                                placeholder="e.g. សុខ"
+                            />
+                            <Input 
+                                label={<span>នាមខ្លួន (Last Name) <span style={{ color: '#ef4444' }}>*</span></span>} 
+                                name="last_name"
+                                value={formData.last_name || ''}
+                                onChange={handleInputChange}
+                                required
+                                placeholder="e.g. ដារ៉ា"
                             />
                             <Input 
                                 label="Email Address (អ៊ីមែល)" 
@@ -346,12 +421,10 @@ const Parents = () => {
                             />
                         </div>
                         <div style={{ marginTop: '0.75rem' }}>
-                            <Input 
-                                label="Address (អាសយដ្ឋាន)" 
-                                name="address"
+                            <CambodianAddressSelector
                                 value={formData.address}
-                                onChange={handleInputChange}
-                                placeholder="e.g. Khan Sen Sok, Phnom Penh"
+                                onChange={(newAddr) => setFormData(prev => ({ ...prev, address: newAddr }))}
+                                label="អាសយដ្ឋានបច្ចុប្បន្ន (Current Address)"
                             />
                         </div>
                     </div>

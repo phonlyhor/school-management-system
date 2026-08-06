@@ -55,12 +55,27 @@ class AdminParentController extends Controller
         try {
             DB::beginTransaction();
 
+            $firstName = $request->first_name ?? '';
+            $lastName = $request->last_name ?? '';
+            $computedName = trim($firstName . ' ' . $lastName);
+            if (empty($computedName)) {
+                $computedName = $request->name;
+            }
+
             // 1. Create the User (Role 4 = Parent)
             $user = User::create([
-                'name' => $request->name,
+                'name' => $computedName,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'role_id' => 4,
+                'phone' => $request->phone,
+                'address' => $request->address,
+                'province' => $request->province,
+                'district' => $request->district,
+                'commune' => $request->commune,
+                'village' => $request->village,
             ]);
 
             // 2. Create StudentParent profile for each student_id
@@ -128,7 +143,25 @@ class AdminParentController extends Controller
             DB::beginTransaction();
 
             // 1. Update User info
-            $userData = $request->only(['name', 'email']);
+            $fn = $request->has('first_name') ? $request->first_name : $user->first_name;
+            $ln = $request->has('last_name') ? $request->last_name : $user->last_name;
+            $computedName = trim(($fn ?? '') . ' ' . ($ln ?? ''));
+            if (empty($computedName)) {
+                $computedName = $request->name ?? $user->name;
+            }
+
+            $userData = [
+                'name' => $computedName,
+                'first_name' => $fn,
+                'last_name' => $ln,
+            ];
+            if ($request->has('email')) $userData['email'] = $request->email;
+            if ($request->has('phone')) $userData['phone'] = $request->phone;
+            if ($request->has('address')) $userData['address'] = $request->address;
+            if ($request->has('province')) $userData['province'] = $request->province;
+            if ($request->has('district')) $userData['district'] = $request->district;
+            if ($request->has('commune')) $userData['commune'] = $request->commune;
+            if ($request->has('village')) $userData['village'] = $request->village;
             if ($request->filled('password')) {
                 $userData['password'] = Hash::make($request->password);
             }

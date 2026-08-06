@@ -78,10 +78,22 @@ const StudentRegister = () => {
     const isRegistrationClosed = !globalRegistrationAllowed || (selectedClass && selectedClass.is_registration_open === false);
 
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
+        const { name, value } = e.target;
+        if (name === 'first_name' || name === 'last_name') {
+            const fn = name === 'first_name' ? value : (formData.first_name || '');
+            const ln = name === 'last_name' ? value : (formData.last_name || '');
+            const computedName = `${fn} ${ln}`.trim();
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                name: computedName
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
     };
 
     const handlePhotoChange = (e) => {
@@ -173,15 +185,15 @@ const StudentRegister = () => {
             padding: '1.5rem 1rem'
         }}>
             <div style={{ width: '100%', maxWidth: '640px' }}>
-                
+
                 {/* Header Logo */}
                 <div style={{ textAlign: 'center', marginBottom: '1.25rem', color: 'white' }}>
                     <div style={{
-                        width: '60px', height: '60px', borderRadius: '16px', background: 'rgba(255, 255, 255, 0.15)',
-                        backdropFilter: 'blur(10px)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: '70px', height: '70px', borderRadius: '50%', background: '#ffffff',
+                        padding: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                         marginBottom: '0.5rem', boxShadow: '0 8px 16px rgba(0, 0, 0, 0.2)'
                     }}>
-                        <MdOutlineSchool size={36} color="#ffffff" />
+                        <img src="/school-logo.png" alt="School Logo" style={{ width: '62px', height: '62px', objectFit: 'contain' }} />
                     </div>
                     <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '800', letterSpacing: '0.02em' }}>
                         វិទ្យាល័យ ហ៊ុន សែន ចំការលើ
@@ -192,7 +204,7 @@ const StudentRegister = () => {
                 </div>
 
                 <Card style={{ padding: '1.5rem', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
-                    
+
                     {/* Important Reminder Note Box */}
                     <div style={{
                         backgroundColor: '#fffbeb',
@@ -247,19 +259,19 @@ const StudentRegister = () => {
 
                     {isRegistrationClosed && (
                         <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', padding: '0.85rem 1rem', borderRadius: '10px', color: '#991b1b', fontSize: '0.9rem', fontWeight: '700', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            🔒 {!globalRegistrationAllowed 
-                                ? t("ការចុះឈ្មោះសិស្សថ្មីតាមប្រព័ន្ធអនឡាញត្រូវបានបិទជាបណ្ដោះអាសន្នដោយ Admin!", "Public student registration is currently closed by Admin!") 
+                            🔒 {!globalRegistrationAllowed
+                                ? t("ការចុះឈ្មោះសិស្សថ្មីតាមប្រព័ន្ធអនឡាញត្រូវបានបិទជាបណ្ដោះអាសន្នដោយ Admin!", "Public student registration is currently closed by Admin!")
                                 : t(`ការចុះឈ្មោះសម្រាប់ថ្នាក់ ${selectedClass?.name || ''} ត្រូវបានបិទជាបណ្ដោះអាសន្នដោយគ្រូបន្ទុកថ្នាក់!`, `Student registration for class ${selectedClass?.name || ''} is currently closed by the homeroom teacher!`)
                             }
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        
+
                         {/* TAB 1: Student Personal Details */}
                         {formTab === 'student' && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-                                
+
                                 {/* Student Photo Avatar Upload */}
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '0.5rem' }}>
                                     <label htmlFor="student-photo-upload" style={{ cursor: 'pointer', textAlign: 'center' }}>
@@ -281,26 +293,36 @@ const StudentRegister = () => {
                                             {photoPreview ? t("🔄 ផ្លាស់ប្តូររូបថត", "Change Photo") : t("📷 បញ្ចូលរូបថតសិស្ស (4x6)", "Upload Photo (4x6)")}
                                         </span>
                                     </label>
-                                    <input 
+                                    <input
                                         id="student-photo-upload"
-                                        type="file" 
-                                        accept="image/*" 
+                                        type="file"
+                                        accept="image/*"
                                         onChange={handlePhotoChange}
                                         style={{ display: 'none' }}
                                     />
                                 </div>
 
-                                <Input 
-                                    label={t("ឈ្មោះពេញសិស្ស", "Student Full Name")}
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    required
-                                    placeholder="e.g. គង់ សុភ័ក្រ"
-                                />
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
+                                    <Input
+                                        label={<span>{t("គោត្តនាម", "First Name")} <span style={{ color: '#ef4444' }}>*</span></span>}
+                                        name="first_name"
+                                        value={formData.first_name || ''}
+                                        onChange={handleChange}
+                                        required
+                                        placeholder="e.g. គង់"
+                                    />
+                                    <Input
+                                        label={<span>{t("នាមខ្លួន", "Last Name")} <span style={{ color: '#ef4444' }}>*</span></span>}
+                                        name="last_name"
+                                        value={formData.last_name || ''}
+                                        onChange={handleChange}
+                                        required
+                                        placeholder="e.g. សុភ័ក្រ"
+                                    />
+                                </div>
 
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
-                                    <Input 
+                                    <Input
                                         label={t("អាសយដ្ឋានអ៊ីមែល", "Email Address")}
                                         type="email"
                                         name="email"
@@ -309,7 +331,7 @@ const StudentRegister = () => {
                                         required
                                         placeholder="student@gmail.com"
                                     />
-                                    <Input 
+                                    <Input
                                         label={t("ពាក្យសម្ងាត់", "Password")}
                                         type="password"
                                         name="password"
@@ -326,9 +348,9 @@ const StudentRegister = () => {
                                         <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: '600', color: '#334155' }}>
                                             {t("ភេទ", "Gender")}
                                         </label>
-                                        <select 
-                                            name="gender" 
-                                            value={formData.gender} 
+                                        <select
+                                            name="gender"
+                                            value={formData.gender}
                                             onChange={handleChange}
                                             style={{ width: '100%', height: '42px', padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.9rem', color: '#0f172a' }}
                                         >
@@ -336,26 +358,26 @@ const StudentRegister = () => {
                                             <option value="Female">👩 {t("ស្រី", "Female")}</option>
                                         </select>
                                     </div>
-                                    
+
                                     {/* Class Selection */}
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: '600', color: '#334155' }}>
                                             {t("ថ្នាក់រៀន", "Class Assignment")}
                                         </label>
-                                        <select 
-                                            name="class_id" 
-                                            value={formData.class_id} 
+                                        <select
+                                            name="class_id"
+                                            value={formData.class_id}
                                             onChange={handleChange}
                                             style={{ width: '100%', height: '42px', padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.9rem', color: '#0f172a' }}
                                         >
                                             <option value="">-- {t("ជ្រើសរើសថ្នាក់រៀន", "Select Class")} --</option>
                                             {classes.map(c => {
                                                 const isClosed = c.is_registration_open === false;
-                                                const streamTag = c.stream === 'science' 
-                                                    ? ' • 🧪 វិទ្យាសាស្ត្រ' 
-                                                    : c.stream === 'social_science' 
-                                                    ? ' • 📜 វិទ្យាសាស្ត្រសង្គម' 
-                                                    : '';
+                                                const streamTag = c.stream === 'science'
+                                                    ? ' • 🧪 វិទ្យាសាស្ត្រ'
+                                                    : c.stream === 'social_science'
+                                                        ? ' • 📜 វិទ្យាសាស្ត្រសង្គម'
+                                                        : '';
                                                 return (
                                                     <option key={c.id} value={c.id} disabled={isClosed} style={{ color: isClosed ? '#94a3b8' : '#0f172a' }}>
                                                         🏫 {c.name} ({t("ថ្នាក់ទី", "Grade")} {c.grade_level}){streamTag} {isClosed ? `🔒 (${t("បិទចុះឈ្មោះ", "Closed")})` : ''}
@@ -367,16 +389,16 @@ const StudentRegister = () => {
                                 </div>
 
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem' }}>
-                                    <Input 
+                                    <Input
                                         label={t("ថ្ងៃខែឆ្នាំកំណើត", "Date of Birth")}
                                         type="date"
                                         name="date_of_birth"
                                         value={formData.date_of_birth}
                                         onChange={handleChange}
                                     />
-                                    
+
                                     {/* Auto-Calculated Age */}
-                                    <Input 
+                                    <Input
                                         label={t("អាយុ (គណនាស្វ័យប្រវត្តិ)", "Age (Auto Calculated)")}
                                         value={calculatedAge ? `${calculatedAge} ${t("ឆ្នាំ", "Years")}` : ''}
                                         readOnly
@@ -384,7 +406,7 @@ const StudentRegister = () => {
                                         placeholder={t("ជ្រើសរើសថ្ងៃកំណើត", "Select DoB first")}
                                     />
 
-                                    <Input 
+                                    <Input
                                         label={t("លេខទូរស័ព្ទសិស្ស", "Phone Number")}
                                         name="phone"
                                         value={formData.phone}
@@ -394,14 +416,14 @@ const StudentRegister = () => {
                                 </div>
 
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
-                                    <Input 
+                                    <Input
                                         label={t("ទីកន្លែងកំណើត", "Place of Birth")}
                                         name="place_of_birth"
                                         value={formData.place_of_birth}
                                         onChange={handleChange}
                                         placeholder="ស្រុកចំការលើ ខេត្តកំពង់ចាម"
                                     />
-                                    <Input 
+                                    <Input
                                         label={t("អាសយដ្ឋានបច្ចុប្បន្ន", "Current Address")}
                                         name="address"
                                         value={formData.address}
@@ -410,8 +432,8 @@ const StudentRegister = () => {
                                     />
                                 </div>
 
-                                <Button 
-                                    type="button" 
+                                <Button
+                                    type="button"
                                     variant="secondary"
                                     onClick={() => setFormTab('family')}
                                     style={{ marginTop: '0.5rem', width: '100%', padding: '0.65rem', fontWeight: '700' }}
@@ -424,21 +446,21 @@ const StudentRegister = () => {
                         {/* TAB 2: Parents Details */}
                         {formTab === 'family' && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                
+
                                 {/* Father Info */}
                                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                                     <strong style={{ color: '#0369a1', fontSize: '0.88rem', display: 'block', marginBottom: '0.75rem' }}>
                                         👨 {t("ព័ត៌មានឪពុក (Father's Details)", "Father Details")}
                                     </strong>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
-                                        <Input 
+                                        <Input
                                             label={t("ឈ្មោះពេញឪពុក", "Father Name")}
                                             name="father_name"
                                             value={formData.father_name}
                                             onChange={handleChange}
                                             placeholder="ឧ. សុខ ប៊ុនធឿន"
                                         />
-                                        <Input 
+                                        <Input
                                             label={t("លេខទូរស័ព្ទឪពុក", "Father Phone")}
                                             name="father_phone"
                                             value={formData.father_phone}
@@ -454,14 +476,14 @@ const StudentRegister = () => {
                                         👩 {t("ព័ត៌មានម្តាយ (Mother's Details)", "Mother Details")}
                                     </strong>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
-                                        <Input 
+                                        <Input
                                             label={t("ឈ្មោះពេញម្តាយ", "Mother Name")}
                                             name="mother_name"
                                             value={formData.mother_name}
                                             onChange={handleChange}
                                             placeholder="ឧ. មាស សុផល"
                                         />
-                                        <Input 
+                                        <Input
                                             label={t("លេខទូរស័ព្ទម្តាយ", "Mother Phone")}
                                             name="mother_phone"
                                             value={formData.mother_phone}
@@ -472,17 +494,17 @@ const StudentRegister = () => {
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-                                    <Button 
-                                        type="button" 
+                                    <Button
+                                        type="button"
                                         variant="secondary"
                                         onClick={() => setFormTab('student')}
                                         style={{ flex: 1, padding: '0.75rem', fontWeight: '700' }}
                                     >
                                         ⬅️ {t("ត្រឡប់ក្រោយ", "Back")}
                                     </Button>
-                                    <Button 
-                                        type="submit" 
-                                        variant="primary" 
+                                    <Button
+                                        type="submit"
+                                        variant="primary"
                                         loading={isSubmitting}
                                         disabled={isSubmitting || isRegistrationClosed}
                                         style={{ flex: 2, padding: '0.75rem', fontWeight: '700', backgroundColor: isRegistrationClosed ? '#94a3b8' : '#4f46e5' }}

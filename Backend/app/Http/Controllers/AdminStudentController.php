@@ -84,12 +84,30 @@ class AdminStudentController extends Controller
                 $photoPath = $request->photo;
             }
 
+            $firstName = $request->first_name ?? '';
+            $lastName = $request->last_name ?? '';
+            $computedName = trim($firstName . ' ' . $lastName);
+            if (empty($computedName)) {
+                $computedName = $request->name;
+            }
+
             // 1. Create the User (Role 3 = Student)
             $user = User::create([
-                'name' => $request->name,
+                'name' => $computedName,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'role_id' => 3, 
+                'photo' => $photoPath,
+                'gender' => $request->gender,
+                'date_of_birth' => $request->date_of_birth,
+                'phone' => $request->phone,
+                'address' => $request->address,
+                'province' => $request->province,
+                'district' => $request->district,
+                'commune' => $request->commune,
+                'village' => $request->village,
             ]);
 
             $position = $request->filled('class_position') ? $request->class_position : 'Member';
@@ -118,7 +136,17 @@ class AdminStudentController extends Controller
                 'mother_phone' => $request->filled('mother_phone') ? $request->mother_phone : null,
                 'place_of_birth' => $request->filled('place_of_birth') ? $request->place_of_birth : null,
                 'class_position' => $position,
-                'max_leave_days' => $request->filled('max_leave_days') ? intval($request->max_leave_days) : 10,
+                'height_cm' => $request->filled('height_cm') ? $request->height_cm : null,
+                'weight_kg' => $request->filled('weight_kg') ? $request->weight_kg : null,
+                'orphan_status' => $request->filled('orphan_status') ? $request->orphan_status : null,
+                'equity_card_type' => $request->filled('equity_card_type') ? $request->equity_card_type : null,
+                'equity_card_number' => $request->filled('equity_card_number') ? $request->equity_card_number : null,
+                'scholarship_type' => $request->filled('scholarship_type') ? $request->scholarship_type : null,
+                'insurance_card_number' => $request->filled('insurance_card_number') ? $request->insurance_card_number : null,
+                'student_phone' => $request->filled('student_phone') ? $request->student_phone : null,
+                'father_occupation' => $request->filled('father_occupation') ? $request->father_occupation : null,
+                'mother_occupation' => $request->filled('mother_occupation') ? $request->mother_occupation : null,
+                'family_monthly_income' => $request->filled('family_monthly_income') ? $request->family_monthly_income : null,
                 'photo' => $photoPath,
             ]);
 
@@ -188,7 +216,27 @@ class AdminStudentController extends Controller
             DB::beginTransaction();
 
             // 1. Update User
-            $userData = $request->only(['name', 'email']);
+            $fn = $request->has('first_name') ? $request->first_name : $user->first_name;
+            $ln = $request->has('last_name') ? $request->last_name : $user->last_name;
+            $computedName = trim(($fn ?? '') . ' ' . ($ln ?? ''));
+            if (empty($computedName)) {
+                $computedName = $request->name ?? $user->name;
+            }
+
+            $userData = [
+                'name' => $computedName,
+                'first_name' => $fn,
+                'last_name' => $ln,
+            ];
+            if ($request->has('email')) $userData['email'] = $request->email;
+            if ($request->has('gender')) $userData['gender'] = $request->gender;
+            if ($request->has('date_of_birth')) $userData['date_of_birth'] = $request->date_of_birth;
+            if ($request->has('phone')) $userData['phone'] = $request->phone;
+            if ($request->has('address')) $userData['address'] = $request->address;
+            if ($request->has('province')) $userData['province'] = $request->province;
+            if ($request->has('district')) $userData['district'] = $request->district;
+            if ($request->has('commune')) $userData['commune'] = $request->commune;
+            if ($request->has('village')) $userData['village'] = $request->village;
             if ($request->filled('password')) {
                 $userData['password'] = Hash::make($request->password);
             }
@@ -200,7 +248,10 @@ class AdminStudentController extends Controller
                 'student_code', 'date_of_birth', 'gender', 'class_id', 'phone', 'address',
                 'father_name', 'father_dob', 'father_phone',
                 'mother_name', 'mother_dob', 'mother_phone',
-                'place_of_birth', 'class_position', 'max_leave_days'
+                'place_of_birth', 'class_position',
+                'height_cm', 'weight_kg', 'orphan_status', 'equity_card_type',
+                'equity_card_number', 'scholarship_type', 'insurance_card_number',
+                'student_phone', 'father_occupation', 'mother_occupation', 'family_monthly_income'
             ];
 
             foreach ($fields as $field) {

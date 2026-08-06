@@ -131,7 +131,7 @@ const StudentIDCardModal = ({ isOpen, onClose, student }) => {
             <body>
                 <div class="id-card">
                     <div class="header">
-                        <div>🏫</div>
+                        <img src="${origin}/school-logo.png" style="width:24px;height:24px;object-fit:contain;background:#fff;border-radius:50%;padding:1px;" />
                         <div>
                             <div class="school-title">វិទ្យាល័យ ហ៊ុន សែន ចំការលើ</div>
                             <div class="school-sub">HUN SEN CHAMKAR LOE HIGH SCHOOL</div>
@@ -193,8 +193,8 @@ const StudentIDCardModal = ({ isOpen, onClose, student }) => {
                             gap: '0.75rem'
                         }}
                     >
-                        <div style={{ background: '#6366f1', padding: '0.4rem', borderRadius: '8px', display: 'flex', alignItems: 'center' }}>
-                            <MdOutlineSchool size={26} />
+                        <div style={{ background: '#ffffff', padding: '0.2rem', borderRadius: '50%', display: 'flex', alignItems: 'center' }}>
+                            <img src="/school-logo.png" alt="School Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
                         </div>
                         <div>
                             <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', letterSpacing: '0.02em' }}>

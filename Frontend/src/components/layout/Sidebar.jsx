@@ -105,8 +105,8 @@ const Sidebar = ({ menuItems = [] }) => {
             
             <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.mobileOpen : ''}`}>
                 <div className={styles.logoSection}>
-                    <div className={styles.logoIcon}>
-                        <MdOutlineSchool size={28} />
+                    <div style={{ background: '#ffffff', borderRadius: '50%', padding: '2px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                        <img src="/school-logo.png" alt="School Logo" style={{ width: '38px', height: '38px', objectFit: 'contain' }} />
                     </div>
                     {!collapsed && (
                         <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
