@@ -78,7 +78,7 @@ function Login() {
             boxSizing: 'border-box'
         }}>
             <div style={{ width: '100%', maxWidth: '440px' }}>
-                
+
                 {/* School Header Badge */}
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'white' }}>
                     <div style={{
@@ -130,7 +130,7 @@ function Login() {
                     </div>
 
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                        
+
                         {/* Email Input */}
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.45rem', fontSize: '0.88rem', fontWeight: '700', color: '#1e293b' }}>
@@ -229,8 +229,19 @@ function Login() {
                 </Card>
 
                 {/* Footer Copyright */}
-                <div style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.78rem', color: 'rgba(255, 255, 255, 0.7)' }}>
-                    © {new Date().getFullYear()} វិទ្យាល័យ ហ៊ុន សែន ចំការលើ. All rights reserved.
+                <div style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.78rem', color: 'rgba(255, 255, 255, 0.8)' }}>
+                    <p>© {new Date().getFullYear()} KH Learning. {t('រក្សាសិទ្ធិគ្រប់យ៉ាង។', 'All rights reserved.')}</p>
+                    <p style={{ marginTop: '0.25rem' }}>
+                        {t('អភិវឌ្ឍន៍ដោយ ❤️', 'Developed with ❤️ by')}{' '}
+                        <a
+                            href="https://phonlyhorcoding.vercel.app/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontWeight: '600', color: '#ffffff', textDecoration: 'underline' }}
+                        >
+                            {t('ផុន លីហ័រ', 'Phon Lyhor')}
+                        </a>
+                    </p>
                 </div>
 
             </div>

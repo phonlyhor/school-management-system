@@ -102,7 +102,7 @@ const Sidebar = ({ menuItems = [] }) => {
             {mobileOpen && (
                 <div className={styles.mobileOverlay} onClick={() => setMobileOpen(false)}></div>
             )}
-            
+
             <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.mobileOpen : ''}`}>
                 <div className={styles.logoSection}>
                     <div style={{ background: '#ffffff', borderRadius: '50%', padding: '2px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
@@ -118,7 +118,7 @@ const Sidebar = ({ menuItems = [] }) => {
                             </span>
                         </div>
                     )}
-                    
+
                     <button className={styles.mobileToggleBtn} onClick={toggleSidebar}>
                         <FiMenu size={20} />
                     </button>
@@ -145,7 +145,7 @@ const Sidebar = ({ menuItems = [] }) => {
                                 key={index}
                                 to={item.path}
                                 end={item.end || false}
-                                className={({ isActive }) => 
+                                className={({ isActive }) =>
                                     `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
                                 }
                                 title={collapsed ? displayLabel : ""}
@@ -202,7 +202,7 @@ const Sidebar = ({ menuItems = [] }) => {
                     </button>
                 </div>
             </aside>
-            
+
             {/* Mobile Hamburger Button */}
             <button className={styles.hamburgerBtn} onClick={() => setMobileOpen(true)}>
                 <FiMenu size={24} />
